@@ -24,7 +24,7 @@ It features:
 This is an assembler that generates AMD64 binary machine code. It is written in Common Lisp. It features:
 - Use of macros to generate encoding functions at compile-time from declarative instruction specifications
 - Use of macros to generate randomized testing functions from the same specifications that drive the encoder
-- A testing framework that checks that the output is bit-for-bit identical with YASM
+- A testing framework that checks that the output is bit-for-bit identical with that of YASM
 - A "jump relaxation" algorithm to minimize the size of compiled jumps
 - Simplistic output to linkable Mach-O object files
 
