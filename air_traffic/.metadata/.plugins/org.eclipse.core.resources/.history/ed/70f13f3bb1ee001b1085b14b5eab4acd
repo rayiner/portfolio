@@ -1,0 +1,50 @@
+/*
+ * CCBS mockup
+ * (C) CCBS team, 2007.
+ */
+
+package edu.gatech.ccbs;
+
+import java.awt.*;
+import java.util.*;
+
+public class Main {
+	private static MapModel mapModel;
+	private static Controller controller;
+	private static ControllerFrame controllerFrame;
+	private static ArrayList pilotFrames;
+	
+	public static Color backgroundColor = new Color(0.0f, 0.0f, 0.075f);
+	public static Color runwayColor = new Color(0.5f, 0.5f, 0.5f);
+	public static Color taxiwayColor = new Color(0.75f, 0.75f, 0.75f);
+	public static Color buildingColor = new Color(0.0f, 0.35f, 0.25f);
+	public static Color rampColor = new Color(0.0f, 0.0f, 0.35f);
+	public static Color aircraftColor = Color.white;
+	public static Color pathColor = new Color(0.0f, 0.65f, 0.0f);
+	
+	public static double aircraftSize = 7.0d;
+	public static double pointSize = 10.0d;
+	
+	public static void appendPilotFrameText(String name, String clearance) {
+		Iterat
+	}
+	
+	public static void main(String[] args) {
+		controller = new Controller("templates.pat");
+		mapModel = new MapModel("atl.map", "atl.isect", "atl.ac");
+		controllerFrame = new ControllerFrame(mapModel, controller);
+		pilotFrames = new ArrayList();
+		
+		Iterator itr = mapModel.children.iterator();
+		while(itr.hasNext()) {
+			Model m = (Model)itr.next();
+			if(m instanceof AircraftModel) {
+				PilotFrame pf = new PilotFrame(m.name);
+				pf.setVisible(true);
+				pilotFrames.add(pf);
+			}
+		}
+		
+		controllerFrame.setVisible(true);
+	}
+}

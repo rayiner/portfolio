@@ -1,0 +1,591 @@
+Author: rayiner
+Date: Fri Nov 24 22:54:58 2006
+New Revision: 10989
+
+Modified:
+   trunk/fundev/sources/dfmc/back-end-protocol/back-end.dylan
+   trunk/fundev/sources/dfmc/back-end-protocol/library.dylan
+   trunk/fundev/sources/dfmc/browser-support/glue-routines.dylan
+   trunk/fundev/sources/dfmc/common/common-library.dylan
+   trunk/fundev/sources/dfmc/common/common.dylan
+   trunk/fundev/sources/dfmc/common/compilation-pass.dylan
+   trunk/fundev/sources/dfmc/harp-cg/harp-macros.dylan
+   trunk/fundev/sources/dfmc/namespace/libraries.dylan
+   trunk/fundev/sources/dfmc/namespace/library-description.dylan
+   trunk/fundev/sources/dfmc/namespace/namespace-library.dylan
+   trunk/fundev/sources/environment/commands/build.dylan
+   trunk/fundev/sources/environment/commands/internal/module.dylan
+   trunk/fundev/sources/environment/dfmc/projects/library.dylan
+   trunk/fundev/sources/environment/dfmc/projects/projects.dylan
+   trunk/fundev/sources/environment/protocols/module.dylan
+   trunk/fundev/sources/environment/protocols/project-objects.dylan
+   trunk/fundev/sources/project-manager/projects/implementation.dylan
+   trunk/fundev/sources/project-manager/projects/lid-projects.dylan
+   trunk/fundev/sources/project-manager/projects/projects-library.dylan
+   trunk/fundev/sources/project-manager/projects/projects.dylan
+Log:
+Job: fd
+- Make DFMC back-end choosable
+- Clean up some bits of back end protocol
+
+
+
+Modified: trunk/fundev/sources/dfmc/back-end-protocol/back-end.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/back-end-protocol/back-end.dylan	(original)
++++ trunk/fundev/sources/dfmc/back-end-protocol/back-end.dylan	Fri Nov 24 22:54:58 2006
+@@ -19,6 +19,8 @@
+ end class;
+ 
+ define constant $back-end-registry = make(<stretchy-vector>);
++define thread variable *cached-back-end* :: false-or(<back-end>) = #f;
++define thread variable *cached-back-end-name* :: false-or(<symbol>) = #f;
+ 
+ define class <back-end-registry-entry> (<object>)
+   constant slot back-end-class :: <class>,
+@@ -35,28 +37,34 @@
+                                    type :: <symbol>,
+                                    architecture :: false-or(<symbol>),
+                                    os :: false-or(<symbol>)) => ();
+-  add!($back-end-registry,
++    add!($back-end-registry,
+        make(<back-end-registry-entry>,
+             back-end-class: class,
+             back-end-type: type,
+             target-architecture: architecture,
+             target-os: os));
+-  if (type = #"harp"
+-        & architecture = $machine-name
+-        & os = $os-name)
+-    default-back-end() := make(class)
+-  end;
+ end;
+ 
+ define function find-back-end (type :: <symbol>,
+                                architecture :: <symbol>,
+-                               os :: <symbol>) => (class :: <class>);
++                               os :: <symbol>) => (entry);
+   choose(method (x)
+            x.back-end-type == type 
+-             & x.target-architecture == architecture
+-             & x.target-os == os
++             & (~ x.target-architecture | x.target-architecture == architecture)
++             & (~ x.target-os | x.target-os == os)
+          end, $back-end-registry)
+ end;
+-  
+-  
+-            
++
++define sideways method current-back-end () => (back-end)
++  let name = current-back-end-name();
++  if (name ~== *cached-back-end-name*)
++    let entries = find-back-end(name, current-processor-name(), current-os-name());
++    if (~ empty?(entries))
++      *cached-back-end* := make(back-end-class(first(entries)));
++      *cached-back-end-name* := name;
++    else
++      error("Invalid back-end %s", name);
++    end;
++  end;
++  *cached-back-end*
++end;
+
+Modified: trunk/fundev/sources/dfmc/back-end-protocol/library.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/back-end-protocol/library.dylan	(original)
++++ trunk/fundev/sources/dfmc/back-end-protocol/library.dylan	Fri Nov 24 22:54:58 2006
+@@ -9,20 +9,20 @@
+ define library dfmc-back-end-protocol
+   use functional-dylan;
+   use system;
++  use io;
+   use dfmc-mangling;
+   use dfmc-common;
+   export dfmc-back-end-protocol;
+ end library;
+ 
+ define module dfmc-back-end-protocol
++  use format-out;
+   use functional-dylan;
+-  use operating-system, import: { $os-name, $machine-name };
++  use dfmc-common;
+   use dfmc-mangling, export: all;
+-  use dfmc-common, import: { default-back-end-setter };
+-
++  
+   export 
+     <back-end>,
+-
+     <local-variable>,
+     <lambda-compiled-data>,
+ 
+@@ -30,8 +30,6 @@
+     raw-mangle,
+ 
+     register-back-end,
+-    find-back-end
+-
+-    ;
++    find-back-end;
+ end module;
+ 
+
+Modified: trunk/fundev/sources/dfmc/browser-support/glue-routines.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/browser-support/glue-routines.dylan	(original)
++++ trunk/fundev/sources/dfmc/browser-support/glue-routines.dylan	Fri Nov 24 22:54:58 2006
+@@ -86,6 +86,7 @@
+     (ld :: dfmc-<library-description>)
+   list(operating-system: ld.dfmc-library-description-os-name,
+        processor: ld.dfmc-library-description-processor-name,
++	   back-end: ld.dfmc-library-description-compiler-back-end-name,
+        mode: ld.dfmc-library-description-compilation-mode,
+        build-location: ld.dfmc-library-description-build-location,
+        library-pack: ld.dfmc-library-description-library-pack)
+@@ -95,6 +96,7 @@
+     (settings, ld :: dfmc-<library-description>)
+   local method setter (ld, #key operating-system = unsupplied(),
+ 		                processor = unsupplied(),
++                        back-end = unsupplied(),
+ 		                mode = unsupplied(),
+ 		                build-location = unsupplied(),
+ 		                library-pack = unsupplied())
+@@ -104,7 +106,10 @@
+ 	  if (supplied?(processor))
+ 	    ld.dfmc-library-description-processor-name := processor
+ 	  end;
+-	  if (supplied?(mode))
++      if (supplied?(back-end))
++        ld.dfmc-library-description-compiler-back-end-name := back-end
++	  end;
++      if (supplied?(mode))
+ 	    ld.dfmc-library-description-compilation-mode := mode
+ 	  end;
+ 	  if (supplied?(build-location))
+
+Modified: trunk/fundev/sources/dfmc/common/common-library.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/common/common-library.dylan	(original)
++++ trunk/fundev/sources/dfmc/common/common-library.dylan	Fri Nov 24 22:54:58 2006
+@@ -177,6 +177,8 @@
+     current-top-level-library-description, 
+       current-top-level-library-description?,
+     current-library-in-context?,
++    current-back-end,
++    current-back-end-name,
+     current-compilation-mode,
+     current-processor-name, current-os-name,
+     compiling-dylan-library?,
+@@ -185,10 +187,6 @@
+ 
+     run-compilation-passes,
+ 
+-    *back-end*, *default-back-end*,
+-      default-back-end, default-back-end-setter,
+-      current-back-end, \with-back-end, do-with-back-end,
+-
+     word-size,
+ 
+     *optimization-level*,
+
+Modified: trunk/fundev/sources/dfmc/common/common.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/common/common.dylan	(original)
++++ trunk/fundev/sources/dfmc/common/common.dylan	Fri Nov 24 22:54:58 2006
+@@ -62,7 +62,8 @@
+   (ld) => (well? :: <boolean>);
+ 
+ define compiler-open generic current-library-in-context? (ld) => (well? :: <boolean>);
+-
++define compiler-open generic current-back-end () => (back-end);
++define compiler-open generic current-back-end-name () => (name :: false-or(<symbol>));
+ define compiler-open generic current-compilation-mode () => (mode :: <symbol>);
+ define compiler-open generic current-processor-name () => (name :: <symbol>);
+ define compiler-open generic current-os-name () => (name :: <symbol>);
+
+Modified: trunk/fundev/sources/dfmc/common/compilation-pass.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/common/compilation-pass.dylan	(original)
++++ trunk/fundev/sources/dfmc/common/compilation-pass.dylan	Fri Nov 24 22:54:58 2006
+@@ -24,8 +24,3 @@
+ 
+ define thread variable *optimization-level* = $optimization-default;
+ 
+-
+-//// back ends
+-
+-define thread-property back-end = #f; // should be subclass(<back-end>)
+-
+
+Modified: trunk/fundev/sources/dfmc/harp-cg/harp-macros.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/harp-cg/harp-macros.dylan	(original)
++++ trunk/fundev/sources/dfmc/harp-cg/harp-macros.dylan	Fri Nov 24 22:54:58 2006
+@@ -15,7 +15,7 @@
+              method(back-end :: <harp-back-end>)
+ 		 let old-variables = back-end.cg-variables;
+ 
+-                 dynamic-bind (*back-end*           = back-end,
++                 dynamic-bind (
+ 			       *harp-outputter*     = ?stream,
+ 			       *emitting-data?*     = #f,
+ 			       *tail-calls*         = #())
+
+Modified: trunk/fundev/sources/dfmc/namespace/libraries.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/namespace/libraries.dylan	(original)
++++ trunk/fundev/sources/dfmc/namespace/libraries.dylan	Fri Nov 24 22:54:58 2006
+@@ -724,6 +724,13 @@
+     dylan-library-library-description?(current-library-description())
+ end method;
+ 
++define sideways method current-back-end-name () => (name :: false-or(<symbol>))
++  let ld = current-library-description();
++  if (ld)
++    library-description-compiler-back-end-name(ld);
++  end;
++end method;
++
+ define sideways method current-compilation-mode () => (mode :: <symbol>)
+   library-description-compilation-mode(current-library-description())
+ end method;
+
+Modified: trunk/fundev/sources/dfmc/namespace/library-description.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/namespace/library-description.dylan	(original)
++++ trunk/fundev/sources/dfmc/namespace/library-description.dylan	Fri Nov 24 22:54:58 2006
+@@ -113,6 +113,7 @@
+   weak slot library-description-database-location,
+     required-init-keyword: location:,
+     reinit-expression: #f;
++  lazy slot library-description-compiler-back-end-slot :: false-or(<symbol>) = #f;
+   lazy slot library-description-os-name-slot :: <symbol> = #"unknown";
+   lazy slot library-description-processor-name-slot :: <symbol> = #"unknown";
+   lazy slot library-description-compilation-mode-slot :: <symbol> = #"tight";
+@@ -514,6 +515,19 @@
+   library & namespace-name(library)
+ end method;
+ 
++define method library-description-compiler-back-end-name
++    (project :: <project-library-description>) => (back-end :: false-or(<symbol>))
++  project.library-description-compiler-back-end-slot
++end method;
++
++define method library-description-compiler-back-end-name-setter
++    (back-end :: false-or(<symbol>), project :: <project-library-description>)
++  unless (back-end == project.library-description-compiler-back-end-name)
++    retract-library-compilation(project);
++    project.library-description-compiler-back-end-slot := back-end;
++  end;
++end method;
++
+ define method library-description-os-name
+     (project :: <project-library-description>) => (os-name :: <symbol>)
+   project.library-description-os-name-slot
+
+Modified: trunk/fundev/sources/dfmc/namespace/namespace-library.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/namespace/namespace-library.dylan	(original)
++++ trunk/fundev/sources/dfmc/namespace/namespace-library.dylan	Fri Nov 24 22:54:58 2006
+@@ -39,7 +39,7 @@
+ 	      <variable-name-table>
+ 	    };
+ 
+-  use dfmc-macro-expander;
++  use dfmc-macro-expander; 
+   // Debugging
+   export
+     read-databases?, read-databases?-setter,
+@@ -108,6 +108,8 @@
+     dood-boot-mapped-objects,
+     compilation-context-object-names,
+     library-description-emit-name,
++    library-description-compiler-back-end-name,
++      library-description-compiler-back-end-name-setter,
+     library-description-os-name,
+       library-description-os-name-setter,
+     library-description-processor-name,
+
+Modified: trunk/fundev/sources/environment/commands/build.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/commands/build.dylan	(original)
++++ trunk/fundev/sources/environment/commands/build.dylan	Fri Nov 24 22:54:58 2006
+@@ -11,6 +11,37 @@
+ 
+ // Compilation mode
+ 
++define class <compiler-back-end-property> (<project-property>)
++end class <compiler-back-end-property>;
++
++define command-property compiler-back-end => <compiler-back-end-property>
++  (summary:       "current compiler back end",
++   documentation: "The current back-end code generator.",
++   type:          <symbol>,
++   persistent?:   #t)
++end command-property compiler-back-end;
++
++define method show-property
++  (context :: <environment-context>, property :: <compiler-back-end-property>)
++ => ()
++  let project = context.context-project;
++  message(context, "Compiler back end: %s", project.project-compiler-back-end);
++end method show-property;
++
++define method set-property
++  (context :: <environment-context>, property :: <compiler-back-end-property>,
++   back-end :: <symbol>,
++   #key save?)
++ => ()
++  ignore(save?);
++  let project = context.context-project;
++  project.project-compiler-back-end :=
++    select (back-end)
++      #"harp", #"c" => back-end;
++      otherwise => set-error("Unrecognized back end: %s", back-end);
++    end;
++end method set-property;
++
+ define class <compilation-mode-property> (<project-property>)
+ end class <compilation-mode-property>;
+ 
+@@ -57,7 +88,7 @@
+ end class <build-script-property>;
+ 
+ define command-property build-script => <build-script-property>
+-  (summary:       "Current build script",
++  (summary:       "current build script",
+    documentation: "The currently active build script.",
+    type:          <file-locator>,
+    persistent?:   #t)
+@@ -351,6 +382,7 @@
+ define command-group build
+     (summary: "project building commands",
+      documentation: "Commands to drive project building.")
++  property compiler-back-end;
+   property compilation-mode;
+   property build-script;
+   command  build;
+
+Modified: trunk/fundev/sources/environment/commands/internal/module.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/commands/internal/module.dylan	(original)
++++ trunk/fundev/sources/environment/commands/internal/module.dylan	Fri Nov 24 22:54:58 2006
+@@ -20,6 +20,8 @@
+               save-project-database =>  env/save-project-database,
+ 	      default-build-script => env/default-build-script,
+ 	      default-build-script-setter => env/default-build-script-setter,
++              project-compiler-back-end => env/project-compiler-back-end,
++              project-compiler-back-end-setter => env/project-compiler-back-end-setter,
+               project-compilation-mode => env/project-compilation-mode,
+               project-compilation-mode-setter => env/project-compilation-mode-setter,
+               project-target-type => env/project-target-type,
+
+Modified: trunk/fundev/sources/environment/dfmc/projects/library.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/dfmc/projects/library.dylan	(original)
++++ trunk/fundev/sources/environment/dfmc/projects/library.dylan	Fri Nov 24 22:54:58 2006
+@@ -41,6 +41,8 @@
+ 	      default-build-script-setter => env/default-build-script-setter,
+               project-compilation-mode => env/project-compilation-mode,
+               project-compilation-mode-setter => env/project-compilation-mode-setter,
++              project-compiler-back-end => env/project-compiler-back-end,
++              project-compiler-back-end-setter => env/project-compiler-back-end-setter,
+               project-target-type => env/project-target-type,
+               <project-target-type> => env/<project-target-type>,
+               project-target-type-setter => env/project-target-type-setter,
+
+Modified: trunk/fundev/sources/environment/dfmc/projects/projects.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/dfmc/projects/projects.dylan	(original)
++++ trunk/fundev/sources/environment/dfmc/projects/projects.dylan	Fri Nov 24 22:54:58 2006
+@@ -864,6 +864,23 @@
+   compilation-mode
+ end method env/project-compilation-mode-setter;
+ 
++define sealed method env/project-compiler-back-end
++    (project :: <dfmc-project-object>)
++ => (back-end :: <compiler-back-end>)
++  project-compiler-back-end(project.ensure-project-proxy);
++end method env/project-compiler-back-end;
++
++define sealed method env/project-compiler-back-end-setter
++    (back-end :: <compiler-back-end>, project :: <dfmc-project-object>)
++ => (back-end :: <compiler-back-end>)
++  let proxy = project.ensure-project-proxy;
++  unless (proxy.project-compiler-back-end == back-end)
++    proxy.project-compiler-back-end := back-end;
++    save-project(proxy);
++  end;
++  back-end
++end method env/project-compiler-back-end-setter;
++
+ define sealed method env/project-target-type
+     (project :: <dfmc-project-object>)
+  => (target-type :: env/<project-target-type>)
+
+Modified: trunk/fundev/sources/environment/protocols/module.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/protocols/module.dylan	(original)
++++ trunk/fundev/sources/environment/protocols/module.dylan	Fri Nov 24 22:54:58 2006
+@@ -410,6 +410,7 @@
+   // Project objects
+   export <project-object>,
+          <compilation-mode>,
++         <compiler-back-end>,
+          <project-target-type>,
+          <project-interface-type>,
+          active-project, active-project-setter,
+@@ -468,6 +469,7 @@
+          project-release-directory,
+          project-server-path,
+          project-compilation-mode, project-compilation-mode-setter,
++         project-compiler-back-end, project-compiler-back-end-setter,
+          project-target-type, project-target-type-setter,
+          project-interface-type, project-interface-type-setter,
+          project-base-address, project-base-address-setter,
+
+Modified: trunk/fundev/sources/environment/protocols/project-objects.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/protocols/project-objects.dylan	(original)
++++ trunk/fundev/sources/environment/protocols/project-objects.dylan	Fri Nov 24 22:54:58 2006
+@@ -226,6 +226,7 @@
+ /// Project property protocols
+ 
+ define constant <compilation-mode> = one-of(#"loose", #"tight");
++define constant <compiler-back-end> = one-of(#"harp", #"c");
+ define constant <project-target-type> = one-of(#"executable", #"dll");
+ define constant <project-interface-type> = one-of(#"console", #"gui");
+ 
+@@ -236,6 +237,13 @@
+     (mode :: <compilation-mode>, project :: <project-object>)
+  => (mode :: <compilation-mode>);
+ 
++define open generic project-compiler-back-end
++	  (project :: <project-object>) => (back-end :: <compiler-back-end>);
++
++define open generic project-compiler-back-end-setter
++    (back-end :: <compiler-back-end>, project :: <project-object>) 
++ => (back-end :: <compiler-back-end>);
++
+ define open generic project-target-type
+     (project :: <project-object>) => (target-type :: <project-target-type>);
+ 
+
+Modified: trunk/fundev/sources/project-manager/projects/implementation.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/implementation.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/implementation.dylan	Fri Nov 24 22:54:58 2006
+@@ -309,11 +309,20 @@
+       unless (processor) processor := default-processor end;
+       unless (operating-system) operating-system := default-os end;
+     end;
++
++    // choose harp for platforms that have it, c for others
++    let back-end = 
++        select (operating-system)
++            #"darwin" => #"c";
++			otherwise => #"harp";
++        end;
++
+     debug-out(#"project-manager", "Make-project: %s parent: %s\n", key, 
+ 	      parent & parent.project-name);
+     let project = 
+       apply(make, c, 
+ 	    processor:, processor, operating-system:, operating-system,
++		compiler-back-end:, back-end,
+ 	    keys);
+ 
+     if (mode) project-compilation-mode(project) := mode end;
+@@ -345,7 +354,7 @@
+     // we attempt to just load the db's without updating sources
+     // unless we are in a compiler transaction
+     // TO DO: make sure %project-top-level? has meaningful value
+-  
++
+     if(project.%project-top-level?)
+      verify-project-database(project)
+     else
+@@ -362,7 +371,6 @@
+ 
+     project-set-compilation-parameters(project);
+     project.%database-saved & note-database-saved(project);
+-
+     project
+   end with-used-project-cache
+   end 
+@@ -410,7 +418,6 @@
+ 	user-warning("Discarding incompatible compiler database %s", 
+ 		     as(<string>, condition-database-name(cond)))
+       end;
+-
+     let context = open-compilation-context(project,
+ 					   database-location: 
+ 					     project-database-location(project),
+@@ -462,6 +469,7 @@
+     add-setting(processor: project-processor(project));
+     add-setting(operating-system: project-operating-system(project));
+   end;
++  add-setting(back-end: project-compiler-back-end(project));
+   add-setting(build-location: project-build-location(project));
+   add-setting(library-pack: project-library-pack(project));
+   context.compilation-context-compiler-settings := compiler-settings;
+
+Modified: trunk/fundev/sources/project-manager/projects/lid-projects.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/lid-projects.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/lid-projects.dylan	Fri Nov 24 22:54:58 2006
+@@ -93,6 +93,9 @@
+   slot project-compilation-mode :: <symbol>, 
+     init-keyword: compilation-mode:,
+     setter: project-compilation-mode-slot-setter;
++  slot project-compiler-back-end :: <symbol>,
++    init-keyword: compiler-back-end:,
++    setter: project-compiler-back-end-slot-setter;
+   slot project-processor, 
+     init-keyword: processor:,
+     setter: project-processor-slot-setter;
+@@ -288,6 +291,11 @@
+   project.project-lid-library-name
+ end method project-library-name;
+ 
++define method project-compiler-back-end-setter(back-end, project :: <lid-project>)
++  project-compiler-back-end-slot(project) := back-end;
++  project-compiler-setting(project, back-end:) := back-end;
++end;
++
+ define method project-processor-setter(processor, project :: <lid-project>)
+   project-processor-slot(project) := processor;
+   project-compiler-setting(project, processor:) := processor;
+
+Modified: trunk/fundev/sources/project-manager/projects/projects-library.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/projects-library.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/projects-library.dylan	Fri Nov 24 22:54:58 2006
+@@ -91,6 +91,8 @@
+     project-source-location,
+     project-compilation-mode,
+     project-compilation-mode-setter,
++    project-compiler-back-end,
++    project-compiler-back-end-setter,
+     project-operating-system,
+     project-operating-system-setter,
+     project-processor,
+
+Modified: trunk/fundev/sources/project-manager/projects/projects.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/projects.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/projects.dylan	Fri Nov 24 22:54:58 2006
+@@ -52,6 +52,11 @@
+ 
+ define open generic project-compilation-mode-setter(mode, project :: <project>);
+ 
++define open generic project-compiler-back-end(project :: <project>)
++ => back-end;
++
++define open generic project-compiler-back-end-setter(back-end, project :: <project>);
++
+ define open generic project-build-location
+     (project :: <project>) 
+  => (location :: false-or(<directory-locator>));
+

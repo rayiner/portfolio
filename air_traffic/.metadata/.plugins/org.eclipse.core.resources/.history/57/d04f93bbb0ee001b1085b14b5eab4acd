@@ -1,0 +1,20 @@
+package edu.gatech.ccbs;
+
+import java.awt.Container;
+
+import javax.swing.*;
+
+public class PilotFrame extends JFrame {
+	String aircraftName;
+	JTextArea clearanceArea;
+	
+	public PilotFrame(String aircraftName) {
+		this.aircraftName = aircraftName;
+		Container cp = getContentPane();
+		cp.add(clearanceArea);
+	}
+
+	public void appendClearance(String clearance) {
+		
+	}
+}

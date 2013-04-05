@@ -1,0 +1,412 @@
+package edu.gatech.ccbs;
+
+import java.io.*;
+import java.util.*;
+
+public class Controller {
+	public ArrayList allPatterns; 
+	
+	public Template currentTemplate;
+	
+	void printList(Object expr) {
+		if(expr instanceof ArrayList) {		
+			System.out.print("(");
+			
+			ArrayList lst = (ArrayList)expr;
+			Iterator itr = lst.iterator();
+			
+			while(itr.hasNext()) {
+				printList(itr.next());
+			}
+			
+			System.out.print(")");
+		}
+		else {
+			System.out.print((String)expr);
+			System.out.print(" ");
+		}
+	}
+	
+	void printExpression(ArrayList expr) {
+		printList(expr);
+		System.out.println("");
+	}
+	
+	private Pattern.Variable parseMatchVariable(ArrayList term) {
+		String name[] = ((String)term.get(0)).split(":");
+		String type = (String)term.get(1);
+		
+		if(name.length != 2) {
+			System.out.print("Parse error (match var) at token: '");
+			System.out.print((String)term.get(0));
+			System.out.println("'");
+			return null;
+		}
+		
+		Pattern.Variable var = new Pattern.Variable();
+		
+		var.name = name[1];
+	
+		if(!name[0].equals("?")) {
+			var.value = name[0];
+		}
+		
+		if(type.equalsIgnoreCase("AircraftID")) {
+			var.type = Pattern.VariableType.AircraftID;
+		}
+		if(type.equalsIgnoreCase("RunwayID")) {
+			var.type = Pattern.VariableType.RunwayID;
+		}
+		if(type.equalsIgnoreCase("RampID")) {
+			var.type = Pattern.VariableType.RampID;
+		}
+		if(type.equalsIgnoreCase("WaypointID")) {
+			var.type = Pattern.VariableType.WaypointID;
+		}
+		if(type.equalsIgnoreCase("TaxiwayID")) {
+			var.type = Pattern.VariableType.TaxiwayID;
+		}
+		else if(type.equalsIgnoreCase("Clearance")) {
+			var.type = Pattern.VariableType.Clearance;
+		}
+		else if(type.equalsIgnoreCase("Path")) {
+			var.type = Pattern.VariableType.Path;
+		}
+		
+		return var;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Pattern.MatchTerm convertMatchExpression(ArrayList expr) {
+		Pattern.MatchTerm term = new Pattern.MatchTerm();
+		Iterator itr = expr.iterator();
+		itr.next();
+		
+		while(itr.hasNext()) {
+			Object subterm = itr.next();
+			if(subterm instanceof ArrayList) {
+				term.variables.add(parseMatchVariable((ArrayList)subterm));
+			}
+			else {
+				System.out.print("Parse error (match) at token: '");
+				System.out.print((String)subterm);
+				System.out.println("'");
+				return null;
+			}
+		}
+		
+		return term;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Pattern.ActionsTerm convertActionsExpression(ArrayList expr) {
+		Pattern.ActionsTerm term = new Pattern.ActionsTerm();
+		Iterator itr = expr.iterator();
+		itr.next();
+		
+		while(itr.hasNext()) {
+			Object subterm = itr.next();
+			if(subterm instanceof String) {
+				term.actions.add((String)subterm);
+			}
+		}
+		
+		return term;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private Pattern.ConvertTerm convertConvertExpression(ArrayList expr) {
+		Pattern.ConvertTerm term = new Pattern.ConvertTerm();
+		Iterator itr = expr.iterator();
+		itr.next();
+		
+		term.commandName = (String)itr.next();
+		
+		while(itr.hasNext()) {
+			Object subterm = itr.next();
+			if(subterm instanceof String) {
+				term.operands.add((String)subterm);
+			}
+		}
+
+		return term;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void convertExpression(ArrayList expr) {
+		Pattern pat = new Pattern();
+		Iterator itr = expr.iterator();
+		
+		while(itr.hasNext()) {
+			Object term = itr.next();
+			
+			if(term instanceof String) {
+				if(!pat.name.equals("")) {
+					System.out.print("Parse error (expr) at token: '");
+					System.out.print(term);
+					System.out.println("'");
+				}
+				pat.name = (String)term;
+			}
+			else if(term instanceof ArrayList) {
+				ArrayList lst = (ArrayList)term;
+				
+				String subname = (String)lst.get(0);
+
+				if(subname.equalsIgnoreCase("match")) {
+					pat.match = convertMatchExpression(lst);
+				}
+				else if(subname.equalsIgnoreCase("actions")) {
+					pat.actions = convertActionsExpression(lst);
+				}
+				else if(subname.equalsIgnoreCase("convert")) {
+					pat.convert = convertConvertExpression(lst);
+				}
+				else
+					System.out.println("no match");
+			}
+		}
+		
+		allPatterns.add(pat);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseExpressions(String line) {
+		
+		StringTokenizer tokr = new StringTokenizer(line, "( )\n", true);
+		
+		Stack stack = new Stack();
+		
+		// parse an s-expression
+		while(tokr.hasMoreTokens()) {
+			String tok = tokr.nextToken().trim();
+			
+			if(!tok.equals(" ") && !tok.equals("") && !tok.equals("\n")) {
+				if(tok.equals("(")) {
+					stack.push(new ArrayList());
+				}
+				else if(tok.equals(")")) {
+					if(stack.isEmpty()) {
+						System.out.print("Syntax error (underflow) at token: '");
+						System.out.print(tok);
+						System.out.println("'");
+						return;
+					}
+					
+					ArrayList finished = (ArrayList)stack.pop();
+					
+					if(stack.empty()) {
+						convertExpression(finished);
+					}
+					else {
+						((ArrayList)stack.peek()).add(finished);
+					}
+				}
+				else if (!stack.empty()) {
+					((ArrayList)stack.peek()).add(tok);
+				}
+			}
+		}
+	}
+
+	private void parsePatterns(String patternFile) {
+		try {
+			FileInputStream fis = new FileInputStream(patternFile);
+			byte buffer[] = new byte[fis.available()];
+			fis.read(buffer);
+			parseExpressions(new String(buffer));
+		}
+		catch (IOException e) {
+			System.out.println("Pattern file not found");
+		}
+	}
+	
+	public Controller(String patternFile) {
+		allPatterns = new ArrayList();
+		
+		parsePatterns(patternFile);		
+		resetState();
+	}
+	
+	public void printPatterns() {
+		Iterator itr = allPatterns.iterator();
+		while(itr.hasNext()) {
+			Pattern pat = (Pattern)itr.next();
+			pat.match.printTerm();
+			pat.actions.printTerm();
+		}
+	}
+	
+	public void resetState() {
+		currentTemplate = new Template();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void pushValue(Pattern.VariableType type, Object value) {
+		Pattern.Variable var = new Pattern.Variable();
+		var.type = type;
+		var.value = value;
+		currentTemplate.values.add(var);
+	}
+	
+	public void popValue() {
+		Pattern.Variable var = topValue();
+		if(var != null)
+			currentTemplate.values.remove(var);
+	}
+	
+	public Pattern.Variable topValue() {
+		int lastIdx = currentTemplate.values.size() - 1;
+		if(lastIdx >= 0)
+			return (Pattern.Variable)currentTemplate.values.get(lastIdx);
+		return null;
+	}
+	
+	public Pattern.Variable lastValueByName(Pattern.VariableType type) {
+		int lastIdx = currentTemplate.values.size() - 1;
+		if(lastIdx >= 0) {
+			ListIterator itr = currentTemplate.values.listIterator(lastIdx);
+			while(itr.hasPrevious()) {
+				Pattern.Variable var = (Pattern.Variable)itr.previous();
+				if(var.type == type)
+					return var;
+			}
+		}
+		
+		return null;
+	}
+	
+	private boolean doesPatternMatch(ArrayList vals, ArrayList vars) {
+		if(vals.size() > vars.size()) {
+			return false;
+		}
+		
+		Iterator valItr = vals.iterator();
+		Iterator varItr = vars.iterator();
+		
+		while(valItr.hasNext() && varItr.hasNext()) {
+			Pattern.Variable valVar = (Pattern.Variable)valItr.next();
+			Pattern.Variable varVar = (Pattern.Variable)varItr.next();
+			
+			if((valVar.type != varVar.type) ||
+				(varVar.value != null && !varVar.value.equals(valVar.value))) {
+				return false;
+			}			
+		}
+		
+		return true;
+	}
+	
+	private boolean doesPatternMatchWhole(ArrayList vals, ArrayList vars) {
+		if(doesPatternMatch(vals, vars) && (vals.size() == vars.size())) {
+			return true;
+		}
+		
+		return false;		
+	}
+	
+	@SuppressWarnings("unchecked")
+	private ArrayList computeMatches(boolean whole) {
+		ArrayList matches = new ArrayList();
+		Iterator itr = allPatterns.iterator();
+		while(itr.hasNext()) {
+			Pattern pat = (Pattern)itr.next();
+			if((whole && doesPatternMatchWhole(currentTemplate.values, pat.match.variables)) ||
+			   (!whole && doesPatternMatch(currentTemplate.values, pat.match.variables))) {
+				matches.add(pat);
+			}
+		}
+	
+		return matches;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void advanceState(Pattern.VariableType type, Object value) {
+		pushValue(type, value);
+		ArrayList list = computeMatches(false);
+		
+		System.out.print("Active patterns: ");
+		System.out.println(list.size());
+	}
+	
+	@SuppressWarnings("unchecked")
+	public ArrayList getExpectedTypes() {
+		ArrayList exp = new ArrayList();
+		ArrayList matches = computeMatches(false);
+
+		Iterator itr = matches.iterator();
+		while(itr.hasNext()) {
+			Pattern pat = (Pattern)itr.next();
+			
+			if(pat.match.variables.size() == currentTemplate.values.size()) {
+				System.out.println("Warning: Complete pattern available");
+			}
+			
+			Iterator valItr = currentTemplate.values.iterator();
+			Iterator varItr = pat.match.variables.iterator();
+			
+			while(valItr.hasNext()) {
+				valItr.next();
+				varItr.next();
+			}
+			
+			if(varItr.hasNext()) {
+				Pattern.Variable var = (Pattern.Variable)varItr.next();
+				exp.add(var.type);
+			}
+		}
+		
+		return exp;
+	}
+	
+	public boolean isInvokable() {
+		ArrayList matches = computeMatches(true);
+		if(matches.size() == 1)
+			return true;
+		for(int i = 0; i < currentTemplate.values.size(); ++i) {
+			Pattern.Variable var = (Pattern.Variable)currentTemplate.values.get(i);
+			System.out.println(var.type);
+		}
+		return false;
+	}
+	
+	public void invokeState() {
+		ArrayList matches = computeMatches(true);
+		if(matches.size() < 1) {
+			System.out.println("No completed patterns!");		
+			return;
+		}
+		else if(matches.size() > 1) {
+			System.out.println("Command is ambiguous!");
+			return;
+		}
+		
+		Pattern pat = (Pattern)matches.get(0);
+		currentTemplate.substituteVariables(pat);
+		currentTemplate.serializeTemplate(pat);
+		
+		resetState();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void performActions(Template tpl, Pattern pat) {
+		Pattern.ActionsTerm actions = pat.actions;
+		Iterator itr = actions.actions.iterator();
+		
+		while(itr.hasNext()) {
+			String action = (String)itr.next();
+			
+			if(action.equals("FillInEndpoint")) {
+				Pattern.Variable var = new Pattern.Variable();
+				var.type = Pattern.VariableType.WaypointID;
+				Pattern.Variable pv = tpl.lookupVariable("via");
+				PathModel pm = (PathModel)pv.value;
+				int lastIdx = pm.intersections.size() - 1;
+				Intersection is = (Intersection)pm.intersections.get(lastIdx);
+				var.value = is.index;
+				var.name = "endpoint";
+				currentTemplate.values.add(var);
+			}
+		}
+	}
+}

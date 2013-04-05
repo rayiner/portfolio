@@ -1,0 +1,13 @@
+package edu.gatech.ccbs;
+
+public class PilotFrame {
+	String aircraftName;
+	
+	public PilotFrame(String aircraftName) {
+		this.aircraftName = aircraftName;
+	}
+
+	public appendClearance(String clearance) {
+		
+	}
+}

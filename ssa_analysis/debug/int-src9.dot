@@ -1,0 +1,5 @@
+graph INTG {
+Y -- A;
+Y -- X1;
+X1 -- A;
+ }

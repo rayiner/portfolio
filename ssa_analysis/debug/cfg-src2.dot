@@ -1,0 +1,22 @@
+digraph CFG {
+B0 [shape=box,fontsize=10,label="B0\ni = ldi #<HALF-CONSTANT {123A9AD1}> \n"];
+B0 -> B1;
+B1 [shape=box,fontsize=10,label="B1\na = ldi #<HALF-CONSTANT {123AA2E9}> \nc = ldi #<HALF-CONSTANT {123AA8B9}> \na != c : B2 B3 \n"];
+B1 -> B2;
+B1 -> B3;
+B2 [shape=box,fontsize=10,label="B2\nb = ldi #<HALF-CONSTANT {123AB391}> \nc = ldi #<HALF-CONSTANT {123AB961}> \nd = ldi #<HALF-CONSTANT {123ABF31}> \n"];
+B2 -> B7;
+B3 [shape=box,fontsize=10,label="B3\na = ldi #<HALF-CONSTANT {123AC6F1}> \nd = ldi #<HALF-CONSTANT {123ACCC1}> \na != d : B4 B5 \n"];
+B3 -> B4;
+B3 -> B5;
+B4 [shape=box,fontsize=10,label="B4\nd = ldi #<HALF-CONSTANT {123AD501}> \n"];
+B4 -> B6;
+B5 [shape=box,fontsize=10,label="B5\nc = ldi #<HALF-CONSTANT {123ADCC1}> \n"];
+B5 -> B6;
+B6 [shape=box,fontsize=10,label="B6\nb = ldi #<HALF-CONSTANT {123AE491}> \n"];
+B6 -> B7;
+B7 [shape=box,fontsize=10,label="B7\nhundred = ldi #<HALF-CONSTANT {123AEC51}> \none = ldi #<HALF-CONSTANT {123AF221}> \ny = add #<HALF-TEMPORARY {123A6751}> #<HALF-TEMPORARY {123A6D59}> \nz = add #<HALF-TEMPORARY {123A7361}> #<HALF-TEMPORARY {123A7969}> \ni = add #<HALF-TEMPORARY {123A6149}> #<HALF-TEMPORARY {123A8B81}> \ni > hundred : B1 B8 \n"];
+B7 -> B1;
+B7 -> B8;
+B8 [shape=box,fontsize=10,label="B8\nret \n"];
+ }

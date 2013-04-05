@@ -1,0 +1,8 @@
+digraph CFG {
+L1 [shape=box,fontsize=10,label="L1\na = ldi 0 \ny = ldi 0 \nx1 = ldi 0 \na != a : L3 L2 \n"];
+L1 -> L3;
+L1 -> L2;
+L2 [shape=box,fontsize=10,label="L2\nx1 = cp y \n"];
+L2 -> L3;
+L3 [shape=box,fontsize=10,label="L3\nz = cp x1 \nret \n"];
+ }

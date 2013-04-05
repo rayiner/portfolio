@@ -1,0 +1,992 @@
+Author: rayiner
+Date: Sun Nov 26 00:19:31 2006
+New Revision: 10991
+
+Added:
+   trunk/fundev/sources/dfmc/c-run-time/Makefile.in   (contents, props changed)
+   trunk/fundev/sources/dfmc/c-run-time/c-linux-build.jam   (contents, props changed)
+Removed:
+   trunk/fundev/sources/dfmc/c-run-time/Makefile
+Modified:
+   trunk/fundev/Makefile.in
+   trunk/fundev/configure.ac
+   trunk/fundev/sources/dfmc/c-back-end/c-back-end-library.dylan
+   trunk/fundev/sources/dfmc/c-back-end/c-emit-object.dylan
+   trunk/fundev/sources/dfmc/c-linker/c-gluefile.dylan
+   trunk/fundev/sources/dfmc/c-linker/c-link-object.dylan
+   trunk/fundev/sources/dfmc/c-linker/c-linker.dylan
+   trunk/fundev/sources/dfmc/c-run-time/dummy-threads.c
+   trunk/fundev/sources/dfmc/c-run-time/posix-threads.c
+   trunk/fundev/sources/dfmc/c-run-time/posix-threads.h
+   trunk/fundev/sources/dfmc/c-run-time/run-time.c
+   trunk/fundev/sources/dfmc/c-run-time/run-time.h
+   trunk/fundev/sources/environment/commands/build.dylan
+   trunk/fundev/sources/environment/dfmc/projects/library.dylan
+   trunk/fundev/sources/environment/dfmc/projects/projects.dylan
+   trunk/fundev/sources/environment/protocols/module.dylan
+   trunk/fundev/sources/environment/protocols/project-objects.dylan
+   trunk/fundev/sources/project-manager/projects/implementation.dylan
+   trunk/fundev/sources/project-manager/projects/projects-library.dylan
+   trunk/fundev/sources/project-manager/projects/projects.dylan
+   trunk/fundev/sources/system/file-system/unix-interface.dylan
+Log:
+Job: fd
+- Add session properties to project-manager
+- Fix C back-end
+  - Add Makefile.in
+  - Add Jam build-script for C back-end
+
+
+
+Modified: trunk/fundev/Makefile.in
+==============================================================================
+--- trunk/fundev/Makefile.in	(original)
++++ trunk/fundev/Makefile.in	Sun Nov 26 00:19:31 2006
+@@ -101,6 +101,7 @@
+ 	@echo Building stage 2 bootstrap...
+ 	OPEN_DYLAN_USER_INSTALL=$(abs_builddir)/Bootstrap.2 \
+ 	  $(MAKE) -C sources/lib/run-time/pentium-linux install
++	  $(MAKE) -C sources/dfmc/c-run-time install
+ 	@OPEN_DYLAN_PLATFORM_NAME=$(fd_build) \
+ 	  OPEN_DYLAN_RELEASE_ROOT=$(abs_builddir)/Bootstrap.2 \
+ 	  OPEN_DYLAN_RELEASE_INSTALL=$(abs_builddir)/Bootstrap.2 \
+@@ -127,6 +128,7 @@
+ 	@echo Building stage 3 bootstrap...
+ 	OPEN_DYLAN_USER_INSTALL=$(abs_builddir)/Bootstrap.3 \
+ 	  $(MAKE) -C sources/lib/run-time/pentium-linux install
++	  $(MAKE) -C sources/dfmc/c-run-time install
+ 	@OPEN_DYLAN_PLATFORM_NAME=$(fd_build) \
+ 	  OPEN_DYLAN_RELEASE_ROOT=$(abs_builddir)/Bootstrap.2 \
+ 	  OPEN_DYLAN_BUILD_LOGS=$(abs_builddir)/Bootstrap.3/logs \
+@@ -163,6 +165,7 @@
+ 	@echo Building final stage bootstrap...
+ 	OPEN_DYLAN_USER_INSTALL=$(prefix) \
+ 	  $(MAKE) -C sources/lib/run-time/pentium-linux install
++	  $(MAKE) -C sources/dfmc/c-run-time install
+ 	@$(FINAL_ENV) $(FDCOMPILE) \
+ 		$(FINAL_LIBRARIES)
+ 
+
+Modified: trunk/fundev/configure.ac
+==============================================================================
+--- trunk/fundev/configure.ac	(original)
++++ trunk/fundev/configure.ac	Sun Nov 26 00:19:31 2006
+@@ -10,7 +10,6 @@
+ AC_DEFUN(FD_PLATFORM,[
+ case $1 in
+ i*86-*-linux-gnu*) $2=x86-linux ;;
+-i*86-suse-linux*) $2=x86-linux ;;
+ i*86-*-freebsd*) $2=x86-bsd ;;
+ powerpc-*-linux-gnu*) $2=ppc-linux ;;
+ powerpc-apple-darwin*) $2=ppc-darwin ;;
+@@ -80,6 +79,6 @@
+ AC_SUBST(LIBRARY_PACKS)
+ 
+ # for now, replace mps only in pentium-linux
+-AC_CONFIG_FILES(Makefile sources/lib/run-time/pentium-linux/Makefile)
++AC_CONFIG_FILES(Makefile sources/lib/run-time/pentium-linux/Makefile sources/dfmc/c-run-time/Makefile)
+ 
+ AC_OUTPUT
+
+Modified: trunk/fundev/sources/dfmc/c-back-end/c-back-end-library.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-back-end/c-back-end-library.dylan	(original)
++++ trunk/fundev/sources/dfmc/c-back-end/c-back-end-library.dylan	Sun Nov 26 00:19:31 2006
+@@ -29,7 +29,6 @@
+   use dfmc-conversion;
+   use dfmc-typist;
+   export
+-    // *** emit-all,
+     <c-back-end>,
+     emit-struct-name,
+     emit-struct-definer-name,
+
+Modified: trunk/fundev/sources/dfmc/c-back-end/c-emit-object.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-back-end/c-emit-object.dylan	(original)
++++ trunk/fundev/sources/dfmc/c-back-end/c-emit-object.dylan	Sun Nov 26 00:19:31 2006
+@@ -232,6 +232,11 @@
+   end block;
+ end method;
+ 
++// Hacky workaround for the fact that
++// the frame-offset of two anonymous
++// lexical variables can be the same.
++define thread variable *name-salt* = 1;
++
+ define method ambiguous-parameter? 
+     (parameters :: <sequence>, var :: <temporary>) 
+  => (ambiguous? :: <boolean>)
+@@ -239,6 +244,10 @@
+     for (tmp in parameters)
+       if (tmp ~== var 
+             & same-name?(var.name, tmp.name))
++          if (tmp.frame-offset == var.frame-offset)
++            var.frame-offset := tmp.frame-offset + *name-salt*;
++            *name-salt* := *name-salt* + 1;
++          end;
+         return(#t);
+       end if;
+     end for;
+
+Modified: trunk/fundev/sources/dfmc/c-linker/c-gluefile.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-linker/c-gluefile.dylan	(original)
++++ trunk/fundev/sources/dfmc/c-linker/c-gluefile.dylan	Sun Nov 26 00:19:31 2006
+@@ -19,6 +19,7 @@
+     format(stream, "  extern void %s ();\n", glue-name(lib-name));
+     format(stream, "  extern D %s;\n", command-arguments-name());
+     format(stream, "  extern D %s;\n", command-name-name());
++    format(stream, "  GC_INIT();\n");
+     write (stream, "  D args = primitive_make_vector((argc > 0) ? argc - 1 : 0);\n");
+     write (stream, "  int i;\n");
+     format(stream, "  if (argc > 0)\n");
+
+Modified: trunk/fundev/sources/dfmc/c-linker/c-link-object.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-linker/c-link-object.dylan	(original)
++++ trunk/fundev/sources/dfmc/c-linker/c-link-object.dylan	Sun Nov 26 00:19:31 2006
+@@ -50,9 +50,15 @@
+ define method emit-forward  // !@#$ NEED UNIFYING TYPE
+     (back-end :: <c-back-end>, stream :: <stream>, o) => ()
+   unless (o.direct-object?)
+-    write(stream, "extern ");
+-    emit-type-name(back-end, stream, o);
+-    format-emit*(back-end, stream, " ^;\n", o);
++    if (o.model-definition 
++		 | instance?(o, <&mm-wrapper>)
++		 | instance?(o, <&singular-terminal-engine-node>))
++		write(stream, "extern ");
++	else
++		write(stream, "static ");
++	end;
++	emit-type-name(back-end, stream, o);
++   	format-emit*(back-end, stream, " ^;\n", o);
+   end unless;
+ end method;
+ 
+@@ -177,7 +183,7 @@
+   write(stream, prefix-string);
+   print-message(type-name, stream);
+   write-element(stream, ' ');
+-  emit-struct-field-name(*c-back-end*, stream, o, slotd, offset);
++  emit-struct-field-name(current-back-end(), stream, o, slotd, offset);
+   write(stream, suffix-string);
+ end method;
+ 
+
+Modified: trunk/fundev/sources/dfmc/c-linker/c-linker.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-linker/c-linker.dylan	(original)
++++ trunk/fundev/sources/dfmc/c-linker/c-linker.dylan	Sun Nov 26 00:19:31 2006
+@@ -10,7 +10,8 @@
+ /// define class <c-linker> (<linker>) end;
+ 
+ define function c-output-basename (basename :: <string>) => (c-basename)
+-  concatenate(basename, "_dude")
++  //concatenate(basename, "")
++	basename
+ end function;
+ 
+ // DRIVER PROTOCOL FUNCTIONS
+
+Added: trunk/fundev/sources/dfmc/c-run-time/Makefile.in
+==============================================================================
+--- (empty file)
++++ trunk/fundev/sources/dfmc/c-run-time/Makefile.in	Sun Nov 26 00:19:31 2006
+@@ -0,0 +1,63 @@
++# Build runtime library for C backend
++
++srcdir		= @srcdir@
++top_srcdir	= @top_srcdir@
++top_builddir	= @top_builddir@
++
++runtime_srcdir	= $(top_srcdir)/sources/dfmc/c-run-time
++
++subdir		= sources/dfmc/c-run-time
++
++VPATH		= $(srcdir)
++
++LIBDEST         = $(OPEN_DYLAN_USER_INSTALL)/lib
++BINDEST         = $(OPEN_DYLAN_USER_INSTALL)/bin
++INCDEST			= $(OPEN_DYLAN_USER_INSTALL)/include
++
++EXPIRATION	= -1
++
++AS = as -L
++AR = ar -q
++
++CFLAGS		= -DGC_LINUX_THREADS=1 -D_REENTRANT=1 \
++		  -O -g -DEXPIRATION=$(EXPIRATION) \
++		  -I$(srcdir) -I$(runtime_srcdir)
++
++OBJS		= dummy-threads.o \
++		  debug-print.o \
++		  run-time.o \
++		  posix-threads.o
++
++RUNTIMELIBDEST	 = $(LIBDEST)/runtime/
++
++all:	$(OBJS)
++
++dummy-threads.o:       $(runtime_srcdir)/dummy-threads.c
++
++debug-print.o:  $(runtime_srcdir)/debug-print.c
++
++run-time.o: $(runtime_srcdir)/run-time.c
++	$(CC) $(CFLAGS) -c -o $@ $<
++
++$(INCDEST):
++	mkdir -p $(INCDEST)
++
++$(RUNTIMELIBDEST):
++	mkdir -p $(RUNTIMELIBDEST)
++
++install-build: $(runtime_srcdir)/c-linux-build.jam
++	cp -fp $(runtime_srcdir)/c-linux-build.jam $(LIBDEST)
++
++install-header:	$(runtime_srcdir)/run-time.h $(INCDEST)
++	cp -fp $(runtime_srcdir)/run-time.h $(INCDEST)
++
++install-runtime: $(OBJS) $(RUNTIMELIBDEST)
++	cp -fp $(OBJS) $(RUNTIMELIBDEST)
++
++install: install-runtime install-build install-header
++
++clean:
++	rm -f *.o
++
++Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
++	cd $(top_builddir) && ./config.status $(subdir)/Makefile
+
+Added: trunk/fundev/sources/dfmc/c-run-time/c-linux-build.jam
+==============================================================================
+--- (empty file)
++++ trunk/fundev/sources/dfmc/c-run-time/c-linux-build.jam	Sun Nov 26 00:19:31 2006
+@@ -0,0 +1,366 @@
++#
++# Configuration variables
++#
++
++CC	?= gcc ;
++
++MKF	?= dylanmakefile.mkf ;
++
++SUFOBJ	?= .o ;			# object files suffix
++SUFASM	?= .s ;			# assembly source files suffix
++SUFLIB	?= .a ;			# static library suffix
++SUFDLL	?= .so ;		# shared library suffix
++SUFMKF	?= .mkf ;               # build-system files
++
++{
++  local _lib = lib ;
++  local _bin = bin ;
++  local _inc = include ;
++
++  # SYSTEM_ROOT is set by the build-system
++  SYSTEM_LIBDIR ?= $(_lib:P=$(SYSTEM_ROOT)) ;
++  SYSTEM_BINDIR ?= $(_bin:P=$(SYSTEM_ROOT)) ;
++  SYSTEM_INCDIR ?= $(_inc:P=$(SYSTEM_ROOT)) ;
++
++  # PERSONAL_ROOT is set by the build-system
++  PERSONAL_LIBDIR ?= $(_lib:P=$(PERSONAL_ROOT)) ;
++  PERSONAL_BINDIR ?= $(_bin:P=$(PERSONAL_ROOT)) ;
++
++  # . is set by the build system
++  LIBDIR ?= $(_lib:P=$(PERSONAL_ROOT:E=$(.:P))) ;
++  BINDIR ?= $(_bin:P=$(PERSONAL_ROOT:E=$(.:P))) ;
++  HDRS ?= $(SYSTEM_INCDIR) ;
++}
++
++#
++# Runtime
++#
++
++RTOBJS ?= posix-threads.o
++	  debug-print.o
++	  run-time.o ;
++
++rtlibs ?= $(SYSTEM_LIBDIR)/runtime/$(RTOBJS) -lgc -lpthread -ldl -lm ;
++
++guilflags ?= ;
++
++#
++# Jambase
++#
++include $(SYSTEM_LIBDIR)/mini-jambase.jam ;
++
++#
++# Pseudo-targets
++#
++
++NotFile all lib dll exe unify-dll unify-exe release dirs clean clean-all ;
++Always clean clean-all ;
++
++#
++# Rules called from jam-build
++#
++
++# In each of the following rules, $(image[1]) contains the name from
++# the Library: header, and $(image[2]) contains the name from
++# the Executable: header (if present).
++
++rule DylanLibrary image : version {
++  # DylanLibrary image : version ;
++  #Echo DylanLibrary $(image) ":" $(version) ;
++
++  # Link a Dylan library as a shared library or executable image.
++
++  local _dll = [ FDLLName $(image) ] ;
++  local _exe = [ FEXEName $(image) ] ;
++
++  # Here we save the name and search directory of the DLL for this library.
++  
++  _dll_$(image[1]:L) = $(_dll) ;
++  if ! $(SYSTEM) && ! $(PERSONAL_ROOT) {
++    _dir_$(image[1]:L) = $(LIBDIR) ;
++  }
++
++  # Shared libraries and executable images
++
++  MakeLocate $(_dll) : $(LIBDIR) ;
++  MakeLocate $(_exe) : $(BINDIR) ;
++
++  # Initial library search path
++  
++  LIBPATH on $(_dll) = $(PERSONAL_LIBDIR) ;
++  LIBPATH on $(_exe) = $(PERSONAL_LIBDIR:E=$(LIBDIR)) ;
++ 
++  # We'll use the library name as the grist to identify referenced
++  # source and object files.
++  
++  SOURCE_GRIST = $(image[1]:L) ;
++
++  # Save the current dylanmakefile.mkf for reference by other libraries
++  # in the event that it later becomes a system library.
++
++  local _mkf = $(image[1]:LS=$(SUFMKF)) ;
++  MakeLocate $(_mkf) : $(LIBDIR) ;
++  if ! $(SYSTEM) {
++    File $(_mkf) : [ FGristFiles $(MKF) ] ;
++    Depends $(_dll) : $(_mkf) ;
++  }
++
++  # The executable depends only on _main.o and the DLL.
++
++  local _obj = [ FGristFiles _main$(SUFOBJ) ] ;
++  local _c   = [ FGristFiles _main.c   ] ;
++  SEARCH on $(_obj) $(_c) = $(SEARCH_SOURCE) ;
++ 
++  Cc $(_obj) : $(_c) ;
++  Depends $(_exe) : $(_dll) ;
++  LINKLIBS on $(_exe) += -l$(image[1]:L) ;
++  LinkEXE $(_exe) : $(_obj) ;
++
++  # If this is the top-level project, make the dll, exe, and clean
++  # targets depend on its build products.
++  
++  if ! $(PARENT) {
++    Depends dll : $(_dll) ;
++    Depends exe : $(_exe) ;
++
++    Clean clean : $(_dll) $(_exe) $(_mkf) $(_obj) ;
++  }
++  Clean clean-all : $(_dll) $(_exe) $(_mkf) $(_obj) ;
++
++  # Mark the library version
++
++  VERSION on $(_dll) ?= $(version:J=.) ;
++  VERSION on $(_exe) ?= $(version:J=.) ;
++}
++
++rule DylanLibraryFiles image : files {
++  # DylanLibraryFiles image : files ;
++  #Echo DylanLibraryFiles $(image) ":" $(files) ;
++
++  # Link Dylan-derived object files into the resulting shared library.
++  if ! $(SYSTEM) {
++    local _dll = [ FDLLName $(image) ] ;
++    
++    local _obj = [ FGristFiles _glue$(SUFOBJ) $(files:S=$(SUFOBJ)) ] ;
++    local _c =   [ FGristFiles _glue.c $(files:S=.c) ] ;
++    local _el  = [ FGristFiles $(files:S=.el) ] ;
++    SEARCH on $(_obj) $(_c) $(_el) = $(SEARCH_SOURCE) ;
++
++    local _i ;
++    for _i in [ FGristFiles _glue.c $(files:S=.c) ] {
++      SEARCH on $(_i) = $(SEARCH_SOURCE) ;
++      local _mobj = [ FGristFiles $(_i:S=$(SUFOBJ)) ] ;
++      MakeLocate $(_mobj) : $(LOCATE_TARGET) ;
++      
++      Cc $(_mobj) : $(_i) ;
++      
++      LinkDLL $(_dll) : $(_mobj) ;
++    }
++
++    if ! $(PARENT) {
++      Clean clean : $(_obj) $(_el) ;
++    }
++    Clean clean-all : $(_obj) $(_el) ;
++  }
++}
++
++rule DylanLibraryLinkerOptions image : options {
++  # DylanLibraryLinkerOptions image : options ;
++  #Echo DylanLibraryLinkerOptions $(image) ":" $(options) ;
++
++  # Add the given options to the link command line of the shared library
++  # and executable images.
++
++  local _dll = [ FDLLName $(image) ] ;
++  local _exe = [ FEXEName $(image) ] ;
++
++  LINKLIBS on $(_dll) += $(options) ;
++  LINKLIBS on $(_exe) += $(options) ;
++}
++
++rule DylanLibraryBaseAddress image : address {
++  # DylanLibraryBaseAddress image : address ;
++  #Echo DylanLibraryBaseAddress $(image) ":" $(address) ;
++
++  # Set the base address of the shared library.
++  
++  local _dll = [ FDLLName $(image) ] ;
++  BASE on $(_dll) ?= $(address) ;
++}
++
++rule DylanLibraryCLibraries image : libraries {
++  # DylanLibraryCLibraries image : libraries ;
++  #Echo DylanLibraryCLibraries $(image) ":" $(libraries) ;
++
++  # Link C (or other externally-derived) libraries into the shared library.
++  
++  local _dll = [ FDLLName $(image) ] ;
++
++  for lib in $(libraries) {
++    switch $(lib) {
++      case -L* : LINKLIBS on $(_dll) += $(lib) ;
++      case -l* : LINKLIBS on $(_dll) += $(lib) ;
++      case *.a : lib = [ FGristFiles $(lib) ] ;
++		 SEARCH on $(lib) = $(SEARCH_SOURCE) ;
++		 Depends $(_dll) : $(lib) ;
++		 NEEDLIBS on $(_dll) += $(lib) ;
++      case * :   Exit Unknown C library $(lib) ;
++    }
++  }
++}
++
++rule DylanLibraryCObjects image : objects {
++  # DylanLibraryCObjects image : objects ;
++  #Echo DylanLibraryCObjects $(image) ":" $(objects) ;
++
++  # Link C (or other externally-derived) object files into the shared library.
++    if ! $(SYSTEM) {
++      local _dll = [ FDLLName $(image) ] ;
++      SEARCH on $(objects) = $(SEARCH_SOURCE) ;
++      LinkDLL $(_dll) : $(objects) ;
++    }
++}
++
++rule DylanLibraryCSources image : sources {
++  # DylanLibraryCSources image : sources ;
++  #Echo DylanLibraryCSources $(image) ":" $(sources) ;
++
++  # Link C source files into the shared library.
++  if ! $(SYSTEM) {
++    local _dll = [ FDLLName $(image) ] ;
++    local _exe = [ FEXEName $(image) ] ;
++
++    local _i ;
++    for _i in [ FGristFiles $(sources) ] {
++      SEARCH on $(_i) = $(SEARCH_SOURCE) ;
++      local _obj = [ FGristFiles $(_i:S=$(SUFOBJ)) ] ;
++      MakeLocate $(_obj) : $(LOCATE_TARGET) ;
++      
++      Cc $(_obj) : $(_i) ;
++      
++      LinkDLL $(_dll) : $(_obj) ;
++      LinkEXE $(_exe) : $(_obj) ;
++    }
++  }
++}
++
++rule DylanLibraryCHeaders image : headers {
++  # DylanLibraryCHeaders image : headers ;
++  #Echo DylanLibraryCHeaders $(image) ":" $(headers) ;
++
++  # Mark the shared library as depending on the given header files.
++  # TODO: The original build-system didn't do anything with this either.
++}
++
++rule DylanLibraryRCFiles image : rcfiles {
++  # DylanLibraryRCFiles image : rcfiles ;
++  #Echo DylanLibraryRCFiles $(image) ":" $(rcfiles) ;
++  
++  # Link Win32 resource files into the shared library and executable.
++  
++  Echo Ignoring RC file(s) $(rcfiles) ;
++}
++
++rule DylanLibraryJamIncludes image : includes {
++  # DylanLibraryJamIncludes image : includes ;
++  
++  Echo Ignoring Jam include file(s) $(includes) ;
++}
++
++rule DylanLibraryUses image : library : dir {
++  # DylanLibraryUses image : library : dir ;
++  #Echo DylanLibraryUses $(image) ":" $(library) ":" $(dir) ;
++
++  # Link other Dylan libraries into the shared library.
++
++  if ! $(_dll_$(library:L)) {
++    local PARENT = $(image[1]:L) ;
++
++    if $(dir) = system || $(SYSTEM) {
++      # This is a system library; read $(SYSTEM_LIBDIR)/$(library:L).mkf
++
++      local SYSTEM = true ;
++      local LIBDIR = $(SYSTEM_LIBDIR) ;
++      local BINDIR = $(SYSTEM_BINDIR) ;
++      
++      local SEARCH_SOURCE LOCATE_SOURCE LOCATE_TARGET = $(SYSTEM_LIBDIR) ;
++      local SOURCE_GRIST ;
++      
++      local _mkf = $(library:LS=$(SUFMKF)) ;
++      SEARCH on $(_mkf) ?= $(SYSTEM_LIBDIR) ;
++      IncludeMKF $(_mkf) ;
++    }
++    else {
++      # Another personal library; read its mkf from its build directory.
++	
++      local SEARCH_SOURCE LOCATE_SOURCE LOCATE_TARGET
++        = $(dir:R=$(LOCATE_TARGET:E=$(DOT))) ;
++      local SOURCE_GRIST ;
++
++      local LIBDIR BINDIR ;
++      {
++	local _lib = lib ;
++	local _bin = bin ;
++
++	LIBDIR = $(_lib:P=$(PERSONAL_ROOT:E=$(LOCATE_TARGET:P))) ;
++	BINDIR = $(_bin:P=$(PERSONAL_ROOT:E=$(LOCATE_TARGET:P))) ;
++      }
++
++      local _mkf = $(MKF:G=$(library:L)) ;
++      SEARCH on $(_mkf) ?= $(SEARCH_SOURCE) ;
++      IncludeMKF $(_mkf) ;
++    }
++  }
++
++  DylanLibraryClosure $(image) : $(library:L) ;
++}
++
++rule DylanLibraryClosure image : libraries {
++  local _dll = [ FDLLName $(image) ] ;
++  local _exe = [ FEXEName $(image) ] ;
++
++  local _i ;
++  for _i in $(libraries) {
++    if ! $(_i) in $(_use_$(image[1]:L)) {
++      _use_$(image[1]:L) += $(_i) ;
++      Depends $(_dll) $(_exe) : $(_dll_$(_i)) ;
++      LINKLIBS on $(_dll) $(_exe) += -l$(_i) ;
++
++      LIBPATH on $(_dll) $(_exe) += $(_dir_$(_i)) ;
++
++      DylanLibraryClosure $(image) : $(_use_$(_i)) ;
++    }
++  }
++}
++
++#
++# Build rules and actions
++#
++
++rule LinkDLL {
++  Depends $(<) : $(>) ;
++}
++
++actions together LinkDLL bind NEEDLIBS {
++  $(CC) -shared -o $(<)  $(LINKFLAGS) $(>) -L"$(LIBPATH)" $(NEEDLIBS) $(LINKLIBS)
++}
++
++rule LinkEXE {
++  Depends $(<) : $(>) ;
++}
++
++actions LinkEXE bind NEEDLIBS {
++  $(CC) -o $(<)  -Wl,-rpath,"$(LIBPATH:J=:)" $(LINKFLAGS) $(>) -L"$(LIBPATH)" $(NEEDLIBS) $(LINKLIBS)
++}
++
++#
++# Utility rules
++#
++
++rule FDLLName {
++  return lib$(<[1]:LS=$(SUFDLL)) ;
++}
++
++rule FEXEName {
++  return $(<[1]:L) ;
++}
+
+Modified: trunk/fundev/sources/dfmc/c-run-time/dummy-threads.c
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-run-time/dummy-threads.c	(original)
++++ trunk/fundev/sources/dfmc/c-run-time/dummy-threads.c	Sun Nov 26 00:19:31 2006
+@@ -19,6 +19,11 @@
+   primitive_break();
+ }
+ 
++D primitive_detach_thread(D t) {
++  ignore(t);
++  return(THREAD_SUCCESS);
++}
++
+ D primitive_release_simple_lock(D l) {
+   ignore(l);
+   return(THREAD_SUCCESS);
+
+Modified: trunk/fundev/sources/dfmc/c-run-time/posix-threads.c
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-run-time/posix-threads.c	(original)
++++ trunk/fundev/sources/dfmc/c-run-time/posix-threads.c	Sun Nov 26 00:19:31 2006
+@@ -19,9 +19,7 @@
+ #include <pthread.h>
+ #include <time.h>
+ 
+-#define SOLARIS_THREADS
+-#define _SOLARIS_PTHREADS
+-#include "gc.h"
++#include <gc/gc.h>
+ 
+ 
+ 
+@@ -280,7 +278,6 @@
+   ZINT     zpriority = (ZINT)p;
+   DBOOL    synchronize = s;
+ 
+-  pthread_t           tid;
+   pthread_attr_t      attr;
+   struct sched_param  param;
+   int                 priority = (int)zpriority >> 2;
+@@ -309,7 +306,7 @@
+ //    return CREATE_ERROR;
+ //  }
+ 
+-  if (pthread_create(&tid, &attr, trampoline, thread)) {
++  if (pthread_create(&thread->tid, &attr, trampoline, thread)) {
+     MSG0("make-thread: error creating thread\n");
+     return CREATE_ERROR;
+   }
+@@ -447,6 +444,14 @@
+   return joined_thread;
+ }
+ 
++/* 4.5 */
++void primitive_detach_thread(D t)
++{
++  DTHREAD* thread = t;
++  assert(thread != NULL);
++
++  pthread_detach(thread->tid);
++}
+ 
+ /* 5 */
+ void primitive_thread_yield(void)
+@@ -1302,7 +1307,6 @@
+ {
+   DTHREAD     *thread = (DTHREAD *)t;
+   TLV_VECTOR   tlv_vector;
+-  pthread_t    tid;
+   int          size;
+ 
+   assert(thread != NULL);
+@@ -1310,9 +1314,8 @@
+   MSG1("Initializing thread %p\n", t);
+ 
+   // Put the thread object and handle in the TEB for later use
+-  tid = pthread_self();
+   set_current_thread(thread);
+-  set_current_thread_handle((void *)tid);
++  set_current_thread_handle((void *)thread->tid);
+ 
+   pthread_mutex_lock(&tlv_vector_list_lock);
+ 
+
+Modified: trunk/fundev/sources/dfmc/c-run-time/posix-threads.h
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-run-time/posix-threads.h	(original)
++++ trunk/fundev/sources/dfmc/c-run-time/posix-threads.h	Sun Nov 26 00:19:31 2006
+@@ -84,6 +84,7 @@
+   D class;
+   void *handle1;
+   void *handle2;
++  pthread_t tid;
+ } DTHREAD;
+ 
+ typedef void * D_NAME;
+
+Modified: trunk/fundev/sources/dfmc/c-run-time/run-time.c
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-run-time/run-time.c	(original)
++++ trunk/fundev/sources/dfmc/c-run-time/run-time.c	Sun Nov 26 00:19:31 2006
+@@ -3331,7 +3331,7 @@
+     Pnext_methods_ = parent_; \
+     return(ncb_(ARGTEMPLATE##_nargs)); \
+   }
+-
++  
+ DEFINE_DISCRIMINATOR_ENGINE(1, 1)
+ DEFINE_DISCRIMINATOR_ENGINE(1, 2)
+ DEFINE_DISCRIMINATOR_ENGINE(1, 3)
+@@ -4346,11 +4346,7 @@
+   return(errno);
+ }
+ 
+-#ifndef macintosh
+-extern char *sys_errlist[ ];
+-#endif
+-  
+-DBSTR primitive_errstr (DSINT no) {
++DCBSTR primitive_errstr (DSINT no) {
+ #ifdef macintosh
+   static char text[32];
+   sprintf(text, "error %d", no);
+@@ -4382,7 +4378,9 @@
+ 
+ /* TERMINAL */
+ 
+-D pseudo_stdout = (D)stdout;
++/* RIH - Moved initialization to startup */
++
++D pseudo_stdout = 0;
+ 
+ /* OPERATING SYSTEM */
+ 
+@@ -4694,6 +4692,7 @@
+     IKJboole_ior_ = primitive_string_as_symbol(&bs_boole_ior_);
+     max_stack_size = INITIAL_MAX_STACK_SIZE;
+     bottom_of_stack = (unsigned long)&stack_marker;
++	pseudo_stdout = (D)stdout;
+   }
+ }
+ 
+
+Modified: trunk/fundev/sources/dfmc/c-run-time/run-time.h
+==============================================================================
+--- trunk/fundev/sources/dfmc/c-run-time/run-time.h	(original)
++++ trunk/fundev/sources/dfmc/c-run-time/run-time.h	Sun Nov 26 00:19:31 2006
+@@ -1,4 +1,5 @@
+ #include <setjmp.h>
++#include <gc/gc.h>
+ 
+ #define OPTIONAL_ARGUMENT_CHECK(fn, req, count)
+ #define REQUIRED_ARGUMENT_CHECK(fn, req, count)
+@@ -52,6 +53,7 @@
+ typedef long double		DEFLT;
+ typedef unsigned long		DADDR;
+ typedef char*			DBSTR;
++typedef const char*		DCBSTR;
+ typedef void* 			D;
+ 
+ /* DYLAN TAGGING */
+
+Modified: trunk/fundev/sources/environment/commands/build.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/commands/build.dylan	(original)
++++ trunk/fundev/sources/environment/commands/build.dylan	Sun Nov 26 00:19:31 2006
+@@ -11,7 +11,7 @@
+ 
+ // Compilation mode
+ 
+-define class <compiler-back-end-property> (<project-property>)
++define class <compiler-back-end-property> (<environment-property>)
+ end class <compiler-back-end-property>;
+ 
+ define command-property compiler-back-end => <compiler-back-end-property>
+@@ -24,8 +24,8 @@
+ define method show-property
+   (context :: <environment-context>, property :: <compiler-back-end-property>)
+  => ()
+-  let project = context.context-project;
+-  message(context, "Compiler back end: %s", project.project-compiler-back-end);
++  let back-end = session-property(#"compiler-back-end");
++  message(context, "Compiler back end: %s", back-end);
+ end method show-property;
+ 
+ define method set-property
+@@ -34,8 +34,7 @@
+    #key save?)
+  => ()
+   ignore(save?);
+-  let project = context.context-project;
+-  project.project-compiler-back-end :=
++  session-property(#"compiler-back-end") :=
+     select (back-end)
+       #"harp", #"c" => back-end;
+       otherwise => set-error("Unrecognized back end: %s", back-end);
+
+Modified: trunk/fundev/sources/environment/dfmc/projects/library.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/dfmc/projects/library.dylan	(original)
++++ trunk/fundev/sources/environment/dfmc/projects/library.dylan	Sun Nov 26 00:19:31 2006
+@@ -20,6 +20,8 @@
+   use dfmc-pentium-harp-cg;		// Pentium backend
+   use dfmc-harp-browser-support;	// Harp browsing support
+   use dfmc-debug-back-end;		// Compiler print methods
++  use dfmc-c-back-end;          // C backend
++  use dfmc-c-linker;            // C linker
+ 
+   use dfmc-environment-database;
+ 
+@@ -52,6 +54,8 @@
+               project-major-version-setter => env/project-major-version-setter,
+               project-minor-version => env/project-minor-version,
+               project-minor-version-setter => env/project-minor-version-setter,
++          session-property => env/session-property,
++              session-property-setter => env/session-property-setter,
+ 	      project-read-only? => env/project-read-only? };
+   use dfmc-environment-database;
+ 
+
+Modified: trunk/fundev/sources/environment/dfmc/projects/projects.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/dfmc/projects/projects.dylan	(original)
++++ trunk/fundev/sources/environment/dfmc/projects/projects.dylan	Sun Nov 26 00:19:31 2006
+@@ -806,6 +806,16 @@
+ 
+ /// Project properties
+ 
++define sideways method env/session-property
++    (key :: <symbol>) => (value)
++  session-property(key)
++end method env/session-property;
++
++define sideways method env/session-property-setter
++    (value, key :: <symbol>) => (value)
++  session-property(key) := value
++end method env/session-property-setter;
++
+ define sealed method env/project-read-only?
+     (project :: <dfmc-project-object>)
+  => (read-only? :: <boolean>)
+
+Modified: trunk/fundev/sources/environment/protocols/module.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/protocols/module.dylan	(original)
++++ trunk/fundev/sources/environment/protocols/module.dylan	Sun Nov 26 00:19:31 2006
+@@ -477,6 +477,8 @@
+          project-minor-version, project-minor-version-setter,
+          find-project-source-record,
+          find-source-record-library,
++         session-property,
++         session-property-setter,
+          source-record-top-level-forms,
+          source-record-projects,
+          source-record-colorization-info,
+
+Modified: trunk/fundev/sources/environment/protocols/project-objects.dylan
+==============================================================================
+--- trunk/fundev/sources/environment/protocols/project-objects.dylan	(original)
++++ trunk/fundev/sources/environment/protocols/project-objects.dylan	Sun Nov 26 00:19:31 2006
+@@ -230,6 +230,12 @@
+ define constant <project-target-type> = one-of(#"executable", #"dll");
+ define constant <project-interface-type> = one-of(#"console", #"gui");
+ 
++define open generic session-property
++    (key :: <symbol>) => (value);
++
++define open generic session-property-setter
++    (value, key :: <symbol>) => (value);
++
+ define open generic project-compilation-mode
+     (project :: <project-object>) => (mode :: <compilation-mode>);
+ 
+
+Modified: trunk/fundev/sources/project-manager/projects/implementation.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/implementation.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/implementation.dylan	Sun Nov 26 00:19:31 2006
+@@ -312,9 +312,10 @@
+ 
+     // choose harp for platforms that have it, c for others
+     let back-end = 
+-        select (operating-system)
+-            #"darwin" => #"c";
+-			otherwise => #"harp";
++      session-property(#"compiler-back-end")
++      | select(operating-system)
++          #"darwin" => #"c";
++          otherwise => #"harp";
+         end;
+ 
+     debug-out(#"project-manager", "Make-project: %s parent: %s\n", key, 
+
+Modified: trunk/fundev/sources/project-manager/projects/projects-library.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/projects-library.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/projects-library.dylan	Sun Nov 26 00:19:31 2006
+@@ -116,6 +116,8 @@
+     note-database-unsaved,
+     note-database-invalidated,
+     ensure-project-database,
++    session-property,
++    session-property-setter,
+     project-build-property,
+     project-build-property-setter;
+   create
+
+Modified: trunk/fundev/sources/project-manager/projects/projects.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects/projects.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects/projects.dylan	Sun Nov 26 00:19:31 2006
+@@ -184,6 +184,7 @@
+ define variable *default-library-minor-version* = 0;
+ define variable *default-library-library-pack*  = 0;
+ 
++define variable *session-properties* = make(<table>);
+ 
+ // this is external interface to return the set of records on disk
+ define function project-source-records(project :: <project>)
+@@ -316,6 +317,23 @@
+   #()
+ end method;
+ 
++// [Optional] Access to global, per-session properties applying to all projects.
++define open generic session-property 
++    (key :: <symbol>) => (value);
++
++define method session-property
++    (key :: <symbol>) => (value)
++  element(*session-properties*, key, default: #f)
++end method;
++
++define open generic session-property-setter
++    (value, key :: <symbol>) => (value);
++
++define method session-property-setter
++    (value, key :: <symbol>) => (value)
++  element(*session-properties*, key) := value;
++end method;
++
+ // [Optional] Access to some optional static properties of the project.
+ define open generic project-keyword-property
+     (project :: <project>, key :: <symbol>, #key default) => (value);
+
+Modified: trunk/fundev/sources/system/file-system/unix-interface.dylan
+==============================================================================
+--- trunk/fundev/sources/system/file-system/unix-interface.dylan	(original)
++++ trunk/fundev/sources/system/file-system/unix-interface.dylan	Sun Nov 26 00:19:31 2006
+@@ -113,7 +113,7 @@
+ /// This value is overkill, actually ...
+ define constant $stat-size = 128 * raw-as-integer(primitive-word-size());
+ 
+-define thread variable *stat-buffer* = make(<byte-vector>, size: $stat-size, fill: '\0');
++define thread variable *stat-buffer* = make(<byte-vector>, size: $stat-size, fill: as(<byte>, '\0'));
+ 
+ define function unix-file-exists? (path :: <byte-string>) => (exists? :: <boolean>)
+   ~primitive-raw-as-boolean
+
+

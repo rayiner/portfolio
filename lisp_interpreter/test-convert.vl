@@ -1,0 +1,43 @@
+; test-convert.vl
+; Test IR conversion
+
+(declare (package test-convert))
+
+(def-fun fib (x)
+  (if (< x 2)
+      1
+      (+ (fib (- x 1) (- x 2)))))
+
+(def-fun test-closure (a b)
+  (flet ((foo (y)
+	   (+ a b y)))
+    (foo 1)))
+
+(def-fun test-let (x)
+  (let* ((a x)
+	 (b a)
+	 (c (+ x 1)))
+    (+ a b c x)))
+
+(def-fun test-if (x)
+  (let ((t (if (= x 1)
+	       1
+	       (if (= x 2)
+		   2
+		   3))))
+    (+ t 2)))
+
+(def-fun test-box (sum)
+  (flet* ((my-loop (x)
+	    (if (< x 100)
+		(set! sum (+ sum x))
+		(my-loop (+ x 1)))))
+    (my-loop 0))
+  (+ sum 3))
+
+(let (({x y} (do-something-funny a b)))
+  
+
+(def-match shuffle
+  ({nil nil} nil)
+  ({(cons a rest1) (cons a rest2)} (cons (cons a b) (shuffle rest1 rest2))))

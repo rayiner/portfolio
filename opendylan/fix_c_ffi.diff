@@ -1,0 +1,30 @@
+Author: rayiner
+Date: Sun Dec 10 09:31:36 2006
+New Revision: 11052
+
+Modified:
+   trunk/fundev/sources/dfmc/harp-cg/harp-emit.dylan
+Log:
+Job: fd
+- Make emit-name() return something sensible for <&c-variable>.
+  This fixes define c-variable on UNIX (or anything else that uses gnu-outputter) 
+
+
+Modified: trunk/fundev/sources/dfmc/harp-cg/harp-emit.dylan
+==============================================================================
+--- trunk/fundev/sources/dfmc/harp-cg/harp-emit.dylan	(original)
++++ trunk/fundev/sources/dfmc/harp-cg/harp-emit.dylan	Sun Dec 10 09:31:36 2006
+@@ -601,6 +601,12 @@
+   c-emitted-name
+ end method emit-name-internal;
+ 
++define sideways method emit-name-internal
++    (back-end :: <harp-back-end>, stream, o :: <&c-variable>)
++  => (c-name :: <string>)
++  c-name(back-end, o.name)
++end method emit-name-internal;
++
+ define method emit-iep-name
+     (back-end :: <harp-back-end>, stream, o :: <&function>)
+  => (name :: <string>);
+

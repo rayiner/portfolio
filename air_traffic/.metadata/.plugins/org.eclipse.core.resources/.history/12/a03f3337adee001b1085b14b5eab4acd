@@ -1,0 +1,28 @@
+package edu.gatech.ccbs;
+/*
+ CCBS mockup.
+ (C) CCBS team, 2007.
+ */
+
+import java.util.*;
+
+public class Model {	
+	public String name = "none";
+	public String desc = "none";
+	public ArrayList children;
+	
+	public Model() {
+		this.children = new ArrayList();
+	}
+	
+	public Model(String name, String desc) {
+		super();
+		this.name = name;
+		this.desc = desc;
+	}
+	
+	public void printModel() {
+		System.out.println(name);
+		System.out.println(desc);
+	}
+}

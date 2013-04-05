@@ -1,0 +1,24 @@
+int[] runway10_xpts = {57, 57, 448, 448};
+int[] runway10_ypts = {607, 597, 597, 607};
+mapX.add(runway10_xpts);
+mapY.add(runway10_ypts);
+
+int[] runway9R_xpts = {54, 54, 443, 443};
+int[] runway9R_ypts = {420, 412, 412, 420};
+mapX.add(runway9R_xpts);
+mapY.add(runway9R_ypts);
+
+int[] runway9L_xpts = {53, 53, 573, 573};
+int[] runway9L_ypts = {374, 367, 367, 374};
+mapX.add(runway9L_xpts);
+mapY.add(runway9L_ypts);
+
+int[] runway8R_xpts = {178, 178, 616, 616};
+int[] runway8R_ypts = {182, 176, 176, 182};
+mapX.add(runway8R_xpts);
+mapY.add(runway8R_ypts);
+
+int[] runway8L_xpts = {168, 168, 562, 562};
+int[] runway8L_ypts = {141, 135, 135, 141};
+mapX.add(runway8L_xpts);
+mapY.add(runway8L_ypts);

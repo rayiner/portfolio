@@ -1,0 +1,5 @@
+1176955654743	Rename enum constant 'ButtonEvent'
+1176961183662	Rename method 'lastVariableByType'
+1176961172669	Rename method 'topVariable'
+1176961162156	Rename method 'popVariable'
+1176961151175	Rename method 'pushVariable'

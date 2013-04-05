@@ -1,0 +1,10 @@
+digraph CFG {
+ENTRY [shape=box,fontsize=10,label="ENTRY\na = ldi #<HALF-CONSTANT {123F2809}> \nb = ldi #<HALF-CONSTANT {123F2DE9}> \nc = ldi #<HALF-CONSTANT {123F33B9}> \nd = ldi #<HALF-CONSTANT {123F3989}> \ne = ldi #<HALF-CONSTANT {123F3F59}> \na != b : IS_SAME NOT_SAME \n"];
+ENTRY -> IS_SAME;
+ENTRY -> NOT_SAME;
+IS_SAME [shape=box,fontsize=10,label="IS_SAME\nb = cp #<HALF-TEMPORARY {123F0691}> \nd = cp #<HALF-TEMPORARY {123F0691}> \ne = cp #<HALF-TEMPORARY {123F0C99}> \n"];
+IS_SAME -> EXIT;
+NOT_SAME [shape=box,fontsize=10,label="NOT_SAME\ne = cp #<HALF-TEMPORARY {123F0C99}> \nb = cp #<HALF-TEMPORARY {123F18B9}> \n"];
+NOT_SAME -> EXIT;
+EXIT [shape=box,fontsize=10,label="EXIT\na = add #<HALF-TEMPORARY {123F1EC1}> #<HALF-TEMPORARY {123F12B1}> \nret #<HALF-TEMPORARY {123F0691}> \n"];
+ }

@@ -1,0 +1,24 @@
+        int[] twoR_x_pts = {128, 137, 298, 290};       
+        int[] twoR_y_pts = {473, 476,  46, 43};     
+        
+        mapX.add(twoR_x_pts);
+        mapY.add(twoR_y_pts);
+                        
+        int[] twoL_x_pts = {90, 102, 202, 190};
+        int[] twoL_y_pts = {462, 467, 199, 194};
+        
+        mapX.add(twoL_x_pts);
+        mapY.add(twoL_y_pts);
+        
+                 
+        int[] six_x_pts = {57, 56, 313, 315};
+        int[] six_y_pts = {338, 327, 311, 321};
+        
+        mapX.add(six_x_pts);
+        mapY.add(six_y_pts);
+                      
+        int[] sixteen_x_pts = {92, 103, 220, 209};
+        int[] sixteen_y_pts = {85, 80, 360, 364};
+        
+        mapX.add(sixteen_x_pts);
+        mapY.add(sixteen_y_pts);

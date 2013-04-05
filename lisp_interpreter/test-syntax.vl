@@ -1,0 +1,243 @@
+; test-syntax.vl
+; Test of vitalisp syntax
+
+; comment
+
+(fun tf-traverse-results (tf result-fn)
+  (when tf
+    (tf-traverse tf %(map %(map result-fn ?.results) ?.derivations))))
+
+(fun power (x n)
+  (if (= n 0)
+      1.0
+      (if n.even?
+	  (power x (/ n 2)).sqr
+	  (* x (power x n.dec)))))
+
+; function definition
+(fun foo (x ? a:0 b:0 & rest)
+  (do-something)
+  (do-something-else))
+
+; case definition
+(case list-length
+  (.nil 0)
+  ((cons _ rest) rest.list-length.inc))
+
+(case list-zip
+  ((nil) (nil) nil)
+  ((cons a rest-a) (cons b rest-b) (cons (cons a b) (list-zip rest-a rest-b))))
+
+(case gen-add
+  ((of fix x) (of fix y) (fix+ x y))
+  ((of flo x) (of flo y) (flo+ x y)))
+
+; macro definition
+;; (macro aif (pred csq ? alt)
+;;   (let ((sym (gensym)))
+;;     `(let (,sym:,pred)
+;;        ,(if alt.bound?
+;; 	    `(if ,sym ,csq ,alt)
+;; 	    `(if ,sym ,csq)))))
+
+; variable definition
+(var global (make-some-thing))
+
+; dynamic variable definition
+(dyn-var interpreter-state)
+
+; constant definition
+(const pi 3.141519)
+
+; type definition
+(type list nil (cons car cdr))
+(type maybe none (thing it))
+(type bool t f)
+
+; do form
+(do a b c)
+(do a
+    b
+    c)
+
+; if form
+(fun test ()
+  (if a b)
+  (if a b c)
+  (if a
+      b)
+  (if a
+      b
+      c))
+
+; cond form
+(fun test ()
+  (cond
+   ((a? b)
+    (b? c))))
+
+(fun convert-function-definition (it)
+  (let ((name args body it.decompose-function-definition)
+	(lf (convert-lambda-body name args body (new-lexical-environment) t)))
+    (emit-name ir-builder name lf.label)))
+
+(fun convert-lambda-body (name args body env rec?)
+  (convert-some-lambda-bodies name.list args.list body.list env rec? nil).first)
+
+(fun convert-source-file (items)
+  (map \(.it (match it.first ('declare t) ('fun it.conv-fun-def)) items)))
+
+(fun rename-ins-definition (ins proc)
+  (push (make-renamed-temporary ins.def.base (inc! base.rencount) proc)
+	base.renstack)
+  (list-head-replace ins.defs.list-head-ref ins.def.base.renstack.first))
+
+(fun rename-phi-uses-in-block (bb)
+  (loop (for phi in bb when \phi?)
+    (add-instruction-use phi.base.renstack.first phi)))
+
+; case form
+(fun test ()
+  (match (some-thing)
+    (.nil (do-something-for-nil))
+    ((cons 1 cdr) (do-something-for-1-cdr))
+    ((cons car cdr) 
+     (do (do-something car)
+	 (do-something-else cdr))))
+  (match (mv-call)
+    (a b "foo!"))
+  (match (get-object)
+    ((of num _) "num")
+    ((of bool _) "bool")
+    ((of list _) "list")))
+
+(fun ir-emit-anon (kind uses & args)
+  (with-val (new-anonymous-temporary)
+    (apply \ir-emit kind it.list uses args)))
+
+(fun convert-lambda-body-rest (args body lf env)
+  (push-procedure ir-builder lf.label)
+  (let ((tvs (map \(.arg (if (and arg.cdr.closed-over? arg.cdr.assigned-to?)
+			     (new-anonymous-temporary)
+			     (lookup-binding arg.car 'variable env).temp))))
+	(defs (if lf.closure-vars (cons lf.closure-temp tvs) tvs)))
+    (ir-emit 'ins-receive defs nil)
+    (map \((arg tv)
+	    (when (and arg.cdr.closed-over? arg.cdr.assigned-to?)
+	      (ir-emit 'ins-prim-call
+		       (lookup-binding arg.car 'variable env).temp.list
+		       tv.list
+		       'prim 'box
+		       'tail? nil))))
+    (convert-evaluable-body lf env t)
+    ir-builder.pop-procedure))
+
+; bind form
+(fun test ()
+  (bind ((fun foo (x) (+ x 1))
+	 (fun bar (x) (+ x 2)))))
+
+(fun test ()
+  (let ((a b (get-some-values))
+	(y (get-more-values a b))
+	(c d (get-some-values)))
+    (print a b y c d)))
+
+(fun test ()
+  (bind ((var a b (get-some-values))
+	 (var y 0)
+	 (fun fib (n)
+	   (if (< n 2)
+	       n
+	       (+ (fib (- n 1)) (fib (- n 2))))))))
+
+(fun push-basic-block (irb)
+  (with-val (make-instance 'basic-block)
+    (push it irb.bstack)))
+
+(fun print-instruction (ins)
+  (with (match ins
+	  (.ins-undef "undef")
+	  (.ins-copy "copy")
+	  (.ins-if "if")
+	  ((ins-prim-call _ _ prim tail?)
+	   (if tail?
+	       (format-string "tail prim-call %s" prim)
+	       (format-string "prim-call %s" prim)))
+	  ((ins-fun-call _ _ fun tail?)
+	   (if tail?
+	       (format-string "tail fun-call %s" fun)
+	       (format-string "fun-call %s" fun)))
+	  (ins-receive "receive")
+	  (ins-return "return"))
+    (map \print-argument ins.ins-defs)
+    (format t "= %s" it)
+    (map \print-argument ins.ins-uses)
+    (format t "\n")))
+
+(fun get-token-from-steram (steram syntax-table)
+  (bind ((fun accumulate-token (char tok)
+	   (with (and char (match (char-type char syntax-table)
+			     ((or 'alphabetic 'numeric 'sign) t)
+			     ((or 'macro 'whitespace) nil)
+			     ('connective (and (equal? "." tok)
+					       tok.integer-token?))))
+	     (if it
+		 (accumulate-token (read-char stream nil)
+				   (append-char! tok char))
+		 (do (unread-char char stream)
+		     tok.convert-token))))
+	 (fun ignore-comment (char)
+	   (when (and char (member? char comment-terminals).not)
+	     (read-char stream nil).ignore-comment)))
+    (if next-char
+	(match (char-type next-char syntax-table)
+	  ((or 'alphabetic 'sign 'numeric)
+	   (accumulate-token (read-char stream nil) (new-empty-string)))
+	  ((or 'macro 'connective 'escape) (read-char stream nil))
+	  ('comment (do (read-char stream nil).ignore-comment
+			(get-token-from-stream stream syntax-table)))
+	  ('whitespace (do (read-char stream nil)
+			   (get-token-from-stream stream syntax-table)))))))
+
+(fun load-userinfo ()
+  (let ((passwords hpwfile.safe-load-table)
+	(admins (map \to-string admin-file.read-file.err-safe))
+	(cookie-to-user cookiefile.safe-load-table)
+	(user-to-cookie (table)))
+    (map-table \((k v) (set! $(user-to-cookie k) v)) cookie-to-user)))
+
+(fun curry (f & args) 
+  \(.rest
+     (apply f (append args rest))))
+
+(fun yrruc (f & args)
+  \(.rest
+     (apply f (append args rest))))
+
+(fun constant (v)
+  \(.args v))
+
+(fun compose/apply (first & rest)
+  (foldl \((f accum) \((args) (apply accum (apply f args)))) first rest))
+
+(fun Y (X)
+  $(\(.procedure
+       $(X \(.arg $($(procedure procedure) arg))))
+    \(.procedure
+       $(X \(.arg $($(procedure procedure) arg))))))
+
+(fun Y (X)
+  $(\((procedure)
+       $(X \((arg) $($(procedure procedure) arg))))
+    \((procedure)
+       $(X \((arg) $($(procedure procedure) arg))))))
+
+(fun Y (X)
+  ((fn (procedure)
+       (X (fn (arg) ((procedure procedure) arg))))
+   (fn (procedure)
+       (X (fn (arg) ((procedure procedure) arg))))))
+
+(fun car_ (li) $($(zap \force (car li))))
+(fun cdr_ (li) $($(zap \force (cdr li))))

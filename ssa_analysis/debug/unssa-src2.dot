@@ -1,0 +1,22 @@
+digraph CFG {
+B0 [shape=box,fontsize=10,label="B0\ni.0 = ldi 1 \n"];
+B0 -> B1;
+B1 [shape=box,fontsize=10,label="B1\na.0 = ldi 2 \nc.0 = ldi 3 \na.0 != c.0 : B2 B3 \n"];
+B1 -> B2;
+B1 -> B3;
+B2 [shape=box,fontsize=10,label="B2\nb.0 = ldi 4 \nc.0 = ldi 5 \nd.0 = ldi 6 \n"];
+B2 -> B7;
+B3 [shape=box,fontsize=10,label="B3\na.0 = ldi 7 \nd.0 = ldi 8 \na.0 != d.0 : B4 B5 \n"];
+B3 -> B4;
+B3 -> B5;
+B4 [shape=box,fontsize=10,label="B4\nd.0 = ldi 9 \n"];
+B4 -> B6;
+B5 [shape=box,fontsize=10,label="B5\nc.0 = ldi 10 \n"];
+B5 -> B6;
+B6 [shape=box,fontsize=10,label="B6\nb.0 = ldi 11 \n"];
+B6 -> B7;
+B7 [shape=box,fontsize=10,label="B7\nhundred.0 = ldi 100 \none.0 = ldi 1 \ny.0 = add a.0 b.0 \nz.0 = add c.0 d.0 \ni.0 = add i.0 one.0 \ni.0 > hundred.0 : B1 B8 \n"];
+B7 -> B1;
+B7 -> B8;
+B8 [shape=box,fontsize=10,label="B8\nret \n"];
+ }

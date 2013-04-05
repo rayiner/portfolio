@@ -1,0 +1,481 @@
+/*
+ CCBS mockup.
+ (C) CCBS team, 2007.
+ */
+package edu.gatech.ccbs;
+
+import java.io.*;
+import java.awt.geom.*;
+import java.awt.*;
+import java.util.*;
+
+class ModelArea {
+	Area area;
+	ShapeModel model;
+}
+
+public class MapModel extends Model {
+	public double pointTolerance = 10.0;
+	
+	private int lineNumber = 1;
+	
+	public double mapWidth;
+	public double mapHeight;
+	
+	private int saveCount = 0;
+	
+	private ArrayList intersections;
+	
+	private Area areaFromShapeModel(ShapeModel sm) {
+		Polygon pol = new Polygon();
+		for(int i = 0; i < sm.outlinePoints.size(); ++i) {
+			Point2D.Double pt = (Point2D.Double)sm.outlinePoints.get(i);
+			pol.addPoint((int)Math.round(pt.x), (int)Math.round(pt.y));
+		}
+		
+		return new Area(pol);
+	}
+
+	private Point2D.Double computeMidpoint(Point2D.Double lhs, Point2D.Double rhs) {
+		return new Point2D.Double((lhs.x+rhs.x)/2.0d, (lhs.y+rhs.y)/2.0d);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void makeIntersection(Model lhs, Model rhs, Point2D.Double l, Point2D.Double r) {
+		if(lhs == rhs) {
+			System.out.println("Cannot have duplicate models!");
+			return;
+		}
+		
+		Point2D.Double mid = computeMidpoint(l, r);
+		PointSetModel psm = new PointSetModel();
+		psm.name = "cpoints";
+		psm.desc = "Control points";
+		psm.controlPoints.add(mid);
+		children.add(psm);
+		
+		Intersection isect = new Intersection();
+		isect.index = intersections.size();
+		isect.point = mid;
+		isect.parents.add(lhs);
+		isect.parents.add(rhs);
+		intersections.add(isect);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void buildAdjacencyLists() {
+		for(int i = 0; i < intersections.size(); ++i) {
+			for(int j = 0; j < intersections.size(); ++j) {
+				if(i != j) {
+					Intersection lhs = (Intersection)intersections.get(i);
+					Intersection rhs = (Intersection)intersections.get(j);
+					Set temp = new HashSet(lhs.parents);
+					temp.retainAll(rhs.parents);
+					
+					if(!temp.isEmpty()) {
+						lhs.neighbors.add(rhs);
+					}
+				}
+			}
+		}
+	}
+	
+	public double neighborCost(Intersection lhs, Intersection rhs) {
+		if(lhs.neighbors.contains(rhs))
+			return lhs.point.distance(rhs.point);
+		return -1.0;
+	}
+	
+	private boolean lowerCost(double lhs, double rhs) {
+		if(rhs < 0)
+			return true;
+		if(lhs < 0)
+			return false;
+		return lhs < rhs;
+	}
+	
+	public Intersection djikstraMin(Set q, double[] d) {
+		double minSoFar = -1.0;
+		Intersection lowestIsect = null;
+		
+		Iterator itr = q.iterator();
+		
+		while(itr.hasNext()) {
+			Intersection isect = (Intersection)itr.next();
+			
+			if(lowerCost(d[isect.index], minSoFar)) {
+				minSoFar = d[isect.index];
+				lowestIsect = isect;
+			}
+		}
+		
+		q.remove(lowestIsect);
+		
+		return lowestIsect;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public ShortestPath computeShortestPath(Intersection begin, Intersection end) {
+		// compute shortest path using Djikstra's algorithm
+		int max = intersections.size();
+		double[] d = new double[max];
+		Intersection[] prev = new Intersection[max];
+		
+		Set s = new HashSet();
+		Set q = new HashSet(intersections);
+		
+		for(int i = 0; i < max; ++i) {
+			d[i] = -1.0;
+			prev[i] = null;
+		}
+		d[begin.index] = 0.0;
+		
+		while(!q.isEmpty()) {
+			Intersection u = djikstraMin(q, d);
+			s.add(u);
+			
+			Iterator itr = u.neighbors.iterator();
+			
+			while(itr.hasNext()) {
+				Intersection v = (Intersection)itr.next();
+				double distance = d[u.index] + neighborCost(u,v);
+				if(lowerCost(distance, d[v.index])) {
+					d[v.index] = distance;
+					prev[v.index] = u;
+				}
+			}
+		}
+		
+		if(prev[end.index] == null) {
+			return null;
+		}
+		
+		ShortestPath sp = new ShortestPath();
+		sp.begin = begin;
+		sp.end = end;
+		sp.distance = d[end.index];
+		
+		Intersection itr = end;
+		while(itr != null && itr != begin) {
+			sp.path.add(itr);
+			itr = prev[itr.index];
+		}
+		if(itr == null) {
+			return null;
+		}
+		sp.path.add(itr);
+		Collections.reverse(sp.path);
+		
+		return sp;
+	}
+	
+	private String[] mapTrim(String[] in) {
+		String[] out = new String[in.length];
+		for(int i = 0; i < in.length; ++i)
+			out[i] = in[i].trim();
+		return out;
+	}
+	
+	private Point2D.Double parsePoint(String point) {
+		String[] coords = point.split(",");
+		
+		if(coords.length != 2) {
+			System.out.print("Syntax error at line: ");
+			System.out.print(lineNumber);
+		}
+		
+		return new Point2D.Double(
+				Double.parseDouble(coords[0].trim()),
+				Double.parseDouble(coords[1].trim()));
+	}
+	
+	private void parseModel(Model m, String[] rest, int start) {
+		m.name = rest[start];
+		m.desc = rest[start+1];
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseShape(ShapeModel sm, String[] rest, int start) {
+		for(int i = start; i < rest.length; ++i) {
+			sm.outlinePoints.add(parsePoint(rest[i]));
+		}
+	}
+	
+	private void parseNameCommand(String[] rest) {
+		name = rest[0];
+	}
+	
+	private void parseSizeCommand(String[] rest) {
+		Point2D.Double pt = parsePoint(rest[0]);
+		mapWidth = pt.x;
+		mapHeight = pt.y;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseRunwayCommand(String[] rest) {
+		RunwayModel rway = new RunwayModel();
+		parseModel(rway, rest, 0);
+		parseShape(rway, rest, 2);
+		children.add(rway);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseTaxiwayCommand(String[] rest) {
+		TaxiwayModel tway = new TaxiwayModel();
+		parseModel(tway, rest, 0);
+		parseShape(tway, rest, 2);
+		children.add(tway);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseRampCommand(String[] rest) {
+		RampModel ramp = new RampModel();
+		parseModel(ramp, rest, 0);
+		parseShape(ramp, rest, 2);
+		children.add(ramp);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseBuildingCommand(String[] rest) {
+		BuildingModel bldg = new BuildingModel();
+		parseModel(bldg, rest, 0);
+		parseShape(bldg, rest, 2);
+		children.add(bldg);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void parseAircraftCommand(String[] rest) {
+		AircraftModel airc = new AircraftModel();
+		parseModel(airc, rest, 0);
+		airc.location = parsePoint(rest[2]);
+		airc.rotation = Double.parseDouble(rest[3]) / 180 * Math.PI;
+		children.add(airc);
+	}
+	
+	private void parseCommand(String cmd, String rest) {
+		String[] rest2 = mapTrim(rest.split(";"));
+		
+		if(cmd.equals("name")) {
+			parseNameCommand(rest2);
+		}
+		else if(cmd.equals("size")) {
+			parseSizeCommand(rest2);
+		}
+		else if(cmd.equals("rway")) {
+			parseRunwayCommand(rest2);
+		}
+		else if(cmd.equals("tway")) {
+			parseTaxiwayCommand(rest2);
+		}
+		else if(cmd.equals("ramp")) {
+			parseRampCommand(rest2);
+		}
+		else if(cmd.equals("bldg")) {
+			parseBuildingCommand(rest2);
+		}
+		else if(cmd.equals("airc")) {
+			parseAircraftCommand(rest2);
+		}
+	}
+	
+	private void parseLine(String cmd) {
+		String[] words = cmd.split(":");
+		
+		if(words.length == 2)
+			parseCommand(words[0].trim(), words[1].trim());
+	}
+	
+	public Intersection lookupIntersectionByLocation(Point2D.Double pt) {
+		for(int i = 0; i < intersections.size(); ++i) {
+			Intersection isect = (Intersection)intersections.get(i);
+			
+			if(isect.point.distance(pt) < pointTolerance) {
+				return isect;
+			}
+		}
+		
+		return null;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public ArrayList lookupIntersectionsInShape(ShapeModel sm) {
+		ArrayList result = new ArrayList();
+		
+		Area a = areaFromShapeModel(sm);
+		
+		for(int i = 0; i < intersections.size(); ++i) {
+			Intersection isect = (Intersection)intersections.get(i);
+			
+			if(a.contains(isect.point)) {
+				result.add(isect);
+			}
+		}
+		
+		return result;
+	}
+	
+	public Intersection lookupIntersectionForAirplane(AircraftModel am) {
+		for(int i = children.size() - 1; i >= 0; --i) {
+			Model m = (Model)children.get(i);
+			
+			if(m instanceof ShapeModel) {
+				Area a = areaFromShapeModel((ShapeModel)m);
+				
+				if(a.contains(am.location)) {
+					ArrayList isects = lookupIntersectionsInShape((ShapeModel)m);
+					if(isects.size() > 0)
+						return (Intersection)isects.get(0);
+				}
+			}
+		}
+		
+		return null;
+	}
+	
+	public Model lookupModelByLocation(Point2D.Double pt) {
+		for(int i = children.size() - 1; i >= 0; --i) {
+			Model sm = (Model)children.get(i);
+			if(sm instanceof ShapeModel) {
+				Area a = areaFromShapeModel((ShapeModel)sm);
+				
+				if(a.contains(pt))
+					return sm;
+			}
+			else if(sm instanceof AircraftModel) {
+				AircraftModel am = (AircraftModel)sm;
+				
+				if(pt.distance(am.location) < Main.aircraftSize)
+					return am;
+			}
+		}
+		
+		return null;
+	}
+	
+	public Model lookupModelByName(String name) {
+		for(int i = 0; i < children.size(); ++i) {
+			Model sm = (Model)children.get(i);
+			
+			if(sm.name.equals(name)) {
+				return sm;
+			}
+		}
+		
+		return null;
+	}
+	
+	public void printModel() {
+		System.out.println("Map ->");
+		System.out.println(this.name);
+		System.out.println(this.mapWidth);
+		System.out.println(this.mapHeight);
+		
+		for(int i = 0; i < children.size(); ++i) {
+			Model m = (Model)children.get(i);
+			m.printModel();
+		}
+	}
+	
+	public void loadMapFile(String mapFile) {
+		try {
+			FileReader file = new FileReader(mapFile);
+			BufferedReader in = new BufferedReader(file);
+			
+			String line;
+			while((line = in.readLine()) != null) {
+				parseLine(line);
+				++lineNumber;
+			}
+		}
+		catch (IOException e) {
+			System.out.println("Map file not found");
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void loadIntersectionsFile(String isectFile) {
+		ArrayList lines = new ArrayList();
+		
+		try {
+			FileReader file = new FileReader(isectFile);
+			BufferedReader in = new BufferedReader(file);
+			
+			String line;
+			while((line = in.readLine()) != null) {
+				lines.add(line);
+			}
+		}
+		catch (IOException e) {
+			System.out.println("Intersections file not found");
+		}
+		
+		int index = 0;
+		while(index < lines.size()) {
+			String idx = (String)lines.get(index++);
+			String x = (String)lines.get(index++);
+			String y = (String)lines.get(index++);
+			String c = (String)lines.get(index++);
+			
+			Intersection is = new Intersection();
+			is.index = Integer.parseInt(idx);
+			double fx = Double.parseDouble(x);
+			double fy = Double.parseDouble(y);
+			is.point = new Point2D.Double(fx, fy);
+			int nc = Integer.parseInt(c);
+			
+			for(int i = 0; i < nc; ++i) {
+				String p = (String)lines.get(index++);
+				Model parent = lookupModelByName(p);
+				is.parents.add(parent);
+			}
+			
+			PointSetModel psm = new PointSetModel();
+			psm.name = "cpoints";
+			psm.desc = "Control points";
+			psm.controlPoints.add(is.point);
+			children.add(psm);
+			
+			intersections.add(is);
+		}
+	}
+	
+	public void saveIntersections() {
+		String baseName = "intersections.txt";
+		String prefix = Integer.toString(saveCount);
+		++saveCount;
+
+		try {
+			FileOutputStream out = new FileOutputStream(prefix.concat(baseName));
+			PrintStream p = new PrintStream(out);
+
+			Iterator itr = intersections.iterator();
+			while(itr.hasNext()) {
+				Intersection isect = (Intersection)itr.next();
+				
+				if(!isect.automatic) {
+					p.println(isect.index);
+					p.println(isect.point.x);
+					p.println(isect.point.y);
+					Iterator pitr = isect.parents.iterator();
+					p.println(isect.parents.size());
+					while(pitr.hasNext()) {
+						Model m = (Model)pitr.next();
+						p.println(m.name);
+					}
+				}
+			}
+		}
+		catch (Exception e) {
+			System.out.println("Exception!");
+		}
+	}
+
+	public MapModel(String mapFile, String isFile, String acFile) {
+		intersections = new ArrayList();
+		
+		loadMapFile(mapFile);
+		loadMapFile(acFile);
+		loadIntersectionsFile(isFile);
+		buildAdjacencyLists();
+	}
+}

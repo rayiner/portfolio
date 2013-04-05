@@ -1,0 +1,24 @@
+int[] nwaHangar_xpts = {363, 382, 382, 363};
+ int[] nwaHangar_ypts = {460, 460, 490, 490};
+ mapX.add(nwaHangar_xpts);
+ mapY.add(nwaHangar_ypts);
+
+ int[] controlTower_xpts = {399, 399, 404, 404};
+ int[] controlTower_ypts = {264, 259, 259, 264};
+ mapX.add(controlTower_xpts);
+ mapY.add(controlTower_ypts);
+
+ int[] DALjetBase_xpts = {471, 606, 606, 587, 587, 580, 580, 556, 556, 513, 513, 464, 464};
+ int[] DALjetBase_ypts = {215, 215, 241, 241, 232, 232, 250, 250, 234, 234, 230, 230, 215};
+ mapX.add(DALjetBase_xpts);
+ mapY.add(DALjetBase_ypts);
+
+ int[] deltaNorth_xpts = {261, 246, 240, 240, 257, 262, 269, 316, 316, 323, 323, 273, 273};
+ int[] deltaNorth_ypts = {109, 86, 87, 85, 83, 92, 88, 88, 102, 102, 113, 113, 109};
+ mapX.add(deltaNorth_xpts);
+ mapY.add(deltaNorth_ypts);
+ 
+ int[] cityHangar_xpts = {253, 232, 258, 287, 257};
+ int[] cityHangar_ypts = {80, 42, 14, 63, 86};
+ mapX.add(cityHangar_xpts);
+ mapY.add(cityHangar_ypts);

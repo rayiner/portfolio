@@ -1,0 +1,52 @@
+; test-interpret.vl
+; Test the interpreter.
+
+(fun test-const () (= 1 1))
+
+(fun test-var () (bind ((var x 3)) (= x 3)))
+
+(fun test-add ()
+  (bind ((var x -123456)
+	 (var y 123457))
+    (= (+ x y) 1)))
+
+(fun fib (n)
+  (if (< n 2)
+      n
+      (+ (fib (- n 2)) (fib (- n 1)))))
+
+(fun test-fib () (= (fib 35) 9227465))
+
+(fun ack (m n)
+  (if (= m 0) (+ n 1)
+      (if (= n 0) (ack (- m 1) 1)
+	  (ack (- m 1) (ack m (- n 1))))))
+
+(fun test-ack () (= (ack 3 9) 4093))
+
+(fun test-clos ()
+  (bind ((var x 3)
+	 (fun foo (z)
+	   (+ z x)))
+    (= (foo 4) 7)))
+
+(fun test-clos1 ()
+  (bind ((var x 3)
+	 (fun foo (z)
+	   (bind ((var y 4)
+		  (fun bar (w)
+		    (bind ((var a 1)
+			   (fun baz (k) (+ k (+ a (+ w (+ y (+ z x)))))))
+		      (baz 10))))
+	     (bar 20))))
+    (= (foo 30) 48)))
+
+(fun run-tests ()
+  (do (if (not (test-const)) (print "const"))
+      (if (not (test-var)) (print "var"))
+      (if (not (test-add)) (print "add"))
+      (if (not (test-fib)) (print "fib"))
+      (if (not (test-ack)) (print "ack"))
+      (if (not (test-clos)) (print "clos"))
+      (if (not (test-clos1)) (print "clos1"))))
+

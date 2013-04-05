@@ -1,0 +1,20 @@
+
+- add support for cffi-grovel. it's hopelessly complex to evaluate
+  preprocessor constants, so the cffi backend should be extended with
+  support to generate cffi-grovel files. see iolib for examples.
+
+- add an ABI abstraction layer to the verrazano-runtime and support
+  virtual c++ method calls.
+
+
+
+
+
+
+- use contextl layered generic methods to generate the
+  output. then the various backends could be simply implemented
+  using layers.
+
+  DROPPED: it's not worth it, just added the backend as a dispatch
+  parameter and users can subclass the backends for customizations.
+

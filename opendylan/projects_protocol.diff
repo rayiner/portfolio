@@ -1,0 +1,75 @@
+Author: rayiner
+Date: Tue Apr 24 05:16:41 2007
+New Revision: 11285
+
+Modified:
+   trunk/fundev/sources/project-manager/projects-protocol/module.dylan
+   trunk/fundev/sources/project-manager/projects-protocol/workspaces.dylan
+Log:
+Job: fd
+
+- Fixup projects-protocol a bit.
+
+
+
+Modified: trunk/fundev/sources/project-manager/projects-protocol/module.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects-protocol/module.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects-protocol/module.dylan	Tue Apr 24 05:16:41 2007
+@@ -17,6 +17,7 @@
+ 
+   // Workspaces
+   create <project-workspace>,
++         <project-user-settings>,
+          default-workspace, default-workspace-setter,
+          workspace-processor,
+          workspace-operating-system,
+@@ -29,8 +30,11 @@
+   create <project>,
+          project-name,
+          project-title,
++         project-location,
++         project-directory,
+          project-workspace,
+          build-project,
++         register-project-condition,
+          open-project-database,
+          project-read-only?,
+          project-can-be-closed?, project-can-be-closed?-setter,
+@@ -48,9 +52,11 @@
+ 
+   // Build targets
+   create <build-target>,
++         <build-state>,
+          <target-source-record>,
+          remove-target-build-products,
+          target-project,
++         target-files,
+          target-read-only?, target-read-only?-setter,
+          target-source-files,
+          target-source-records,
+@@ -121,7 +127,9 @@
+          <release-file-information>;
+ 
+   // Warnings
+-  create <project-warning>,
++  create <project-condition>,
++         <project-error>,
++         <project-warning>,
+          <project-serious-warning>,
+          warning-project;
+ 
+
+Modified: trunk/fundev/sources/project-manager/projects-protocol/workspaces.dylan
+==============================================================================
+--- trunk/fundev/sources/project-manager/projects-protocol/workspaces.dylan	(original)
++++ trunk/fundev/sources/project-manager/projects-protocol/workspaces.dylan	Tue Apr 24 05:16:41 2007
+@@ -12,6 +12,7 @@
+ //---*** What should these really be?
+ define constant <processor>           = <symbol>;
+ define constant <operating-system>    = <symbol>;
++define constant <linker> = <symbol>;
+ 
+ define constant <abort-reason>
+   = one-of(#"never", #"warnings", #"serious-warnings");
+

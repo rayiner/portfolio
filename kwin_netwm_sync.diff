@@ -1,0 +1,741 @@
+? sync.cpp
+? sync.h
+Index: Makefile.am
+===================================================================
+RCS file: /home/kde/kdebase/kwin/Makefile.am,v
+retrieving revision 1.60
+diff -u -r1.60 Makefile.am
+--- Makefile.am	8 Jan 2004 13:36:19 -0000	1.60
++++ Makefile.am	1 Feb 2004 04:40:50 -0000
+@@ -11,7 +11,7 @@
+ 	 options.cpp plugins.cpp events.cpp KWinInterface.skel \
+ 	killwindow.cpp geometrytip.cpp sm.cpp group.cpp bridge.cpp \
+ 	manage.cpp notifications.cpp activation.cpp useractions.cpp \
+-	geometry.cpp
++	geometry.cpp sync.cpp
+ 
+ kwin_la_LIBADD = $(LIB_KDEUI) lib/libkdecorations.la
+ kwin_la_LDFLAGS = $(all_libraries) -module -avoid-version
+Index: atoms.cpp
+===================================================================
+RCS file: /home/kde/kdebase/kwin/atoms.cpp,v
+retrieving revision 1.21
+diff -u -r1.21 atoms.cpp
+--- atoms.cpp	4 Dec 2003 13:54:09 -0000	1.21
++++ atoms.cpp	1 Feb 2004 04:40:50 -0000
+@@ -62,6 +62,12 @@
+     atoms[n] = &kde_system_tray_embedding;
+     names[n++] = (char*) "_KDE_SYSTEM_TRAY_EMBEDDING";
+ 
++    atoms[n] = &qt_sync_type;
++    names[n++] = (char*) "SYNC_COUNTER";
++    
++    atoms[n] = &qt_sync_counter;
++    names[n++] = (char*) "_METACITY_UPDATE_COUNTER";
++    
+     Atom fake;
+     atoms[n] = &fake;
+     names[n++] = (char *) "_DT_SM_WINDOW_INFO";
+Index: atoms.h
+===================================================================
+RCS file: /home/kde/kdebase/kwin/atoms.h,v
+retrieving revision 1.18
+diff -u -r1.18 atoms.h
+--- atoms.h	30 Oct 2003 10:10:53 -0000	1.18
++++ atoms.h	1 Feb 2004 04:40:50 -0000
+@@ -36,6 +36,11 @@
+         Atom net_wm_user_time;
+         Atom kde_net_wm_user_creation_time;
+         Atom kde_system_tray_embedding;
++        
++#ifndef KWIN_NO_XSYNC
++        Atom qt_sync_type;
++        Atom qt_sync_counter;
++#endif
+     };
+ 
+ 
+Index: client.cpp
+===================================================================
+RCS file: /home/kde/kdebase/kwin/client.cpp,v
+retrieving revision 1.406
+diff -u -r1.406 client.cpp
+--- client.cpp	30 Jan 2004 15:24:46 -0000	1.406
++++ client.cpp	1 Feb 2004 04:40:51 -0000
+@@ -89,7 +89,14 @@
+         border_left( 0 ),
+         border_right( 0 ),
+         border_top( 0 ),
++#ifdef KWIN_NO_XSYNC
+         border_bottom( 0 )
++#else
++        border_bottom( 0 ),
++        syncCounter ( 0 ),
++        syncAlarm ( 0 ),
++        inGeometryUpdate ( 0 )
++#endif
+ // SELI do all as initialization
+     {
+     autoRaiseTimer = 0;
+@@ -194,6 +201,11 @@
+     XReparentWindow( qt_xdisplay(), client, workspace()->rootWin(), x(), y());
+     XRemoveFromSaveSet( qt_xdisplay(), client );
+     XSelectInput( qt_xdisplay(), client, NoEventMask );
++    
++#ifndef KWIN_NO_XSYNC
++    destroyXSyncAlarm();
++#endif
++
+     if( on_shutdown )
+         { // map the window, so it can be found after another WM is started
+         XMapWindow( qt_xdisplay(), client );
+@@ -227,6 +239,11 @@
+     destroyDecoration();
+     cleanGrouping();
+     workspace()->removeClient( this, Allowed );
++
++#ifndef KWIN_NO_XSYNC
++    destroyXSyncAlarm();
++#endif
++    
+     client = None; // invalidate
+     XDestroyWindow( qt_xdisplay(), wrapper );
+     wrapper = None;
+Index: client.h
+===================================================================
+RCS file: /home/kde/kdebase/kwin/client.h,v
+retrieving revision 1.134
+diff -u -r1.134 client.h
+--- client.h	19 Jan 2004 15:07:14 -0000	1.134
++++ client.h	1 Feb 2004 04:40:52 -0000
+@@ -16,9 +16,11 @@
+ #include "options.h"
+ #include "workspace.h"
+ #include "kdecoration.h"
++#include "sync.h"
+ #include <qframe.h>
+ #include <qvbox.h>
+ #include <qpixmap.h>
++#include <qdatetime.h>
+ #include <netwm.h>
+ #include <kdebug.h>
+ #include <assert.h>
+@@ -77,6 +79,13 @@
+         int height() const;
+         QPoint clientPos() const; // inside of geometry()
+         QSize clientSize() const;
++        
++#ifndef KWIN_NO_XSYNC
++        bool processXSyncAlarmEvent(XSyncAlarmNotifyEvent*);
++        
++        XSyncCounter counterId() { return syncCounter; }
++        XSyncAlarm   alarmId() { return syncAlarm; }
++#endif
+ 
+         bool windowEvent( XEvent* e );
+         virtual bool eventFilter( QObject* o, QEvent* e );
+@@ -201,6 +210,15 @@
+ 
+         void setGeometry( int x, int y, int w, int h, ForceGeometry_t force = NormalGeometrySet );
+         void setGeometry( const QRect& r, ForceGeometry_t force = NormalGeometrySet );
++
++#ifndef KWIN_NO_XSYNC
++        void queueGeometry( int x, int y, int w, int h, ForceGeometry_t force = NormalGeometrySet );
++        void queueGeometry( const QRect& r, ForceGeometry_t force = NormalGeometrySet );
++        void commitGeometry();
++        QRect calcFrameGeometry( int x, int y, int w, int h );
++        QSize calcClientSize( int x, int y, int w, int h );
++#endif
++        
+         void move( int x, int y, ForceGeometry_t force = NormalGeometrySet );
+         void move( const QPoint & p, ForceGeometry_t force = NormalGeometrySet );
+         // plainResize() simply resizes
+@@ -476,6 +494,26 @@
+         bool shade_geometry_change;
+         int border_left, border_right, border_top, border_bottom;
+         QRegion _mask;
++        
++#ifndef KWIN_NO_XSYNC
++        QTime        redrawStopwatch;
++        XSyncCounter syncCounter;
++        XSyncAlarm   syncAlarm;
++        bool         inGeometryUpdate;
++        QRect        queuedFrameGeometry;
++        bool         isOutward;
++        
++        void lookupXSyncCounter();
++        void createXSyncAlarm();
++        void destroyXSyncAlarm();
++        
++        void enterSyncMoveResize();
++        void leaveSyncMoveResize();
++
++        bool redrawLimitReached();
++        bool syncTimeoutExpired();
++#endif
++        
+         friend struct FetchNameInternalPredicate;
+         void show() { assert( false ); } // SELI remove after Client is no longer QWidget
+         void hide() { assert( false ); }
+@@ -805,6 +843,13 @@
+     setGeometry( r.x(), r.y(), r.width(), r.height(), force );
+     }
+ 
++#ifndef KWIN_NO_XSYNC
++inline void Client::queueGeometry( const QRect& r, ForceGeometry_t force )
++    {
++    queueGeometry( r.x(), r.y(), r.width(), r.height(), force );
++    }
++#endif
++
+ inline void Client::move( const QPoint & p, ForceGeometry_t force )
+     {
+     move( p.x(), p.y(), force );
+Index: events.cpp
+===================================================================
+RCS file: /home/kde/kdebase/kwin/events.cpp,v
+retrieving revision 1.51
+diff -u -r1.51 events.cpp
+--- events.cpp	6 Jan 2004 09:42:00 -0000	1.51
++++ events.cpp	1 Feb 2004 04:40:53 -0000
+@@ -19,6 +19,7 @@
+ #include "workspace.h"
+ #include "atoms.h"
+ #include "tabbox.h"
++#include "sync.h"
+ 
+ #include <qwhatsthis.h>
+ #include <kkeynative.h>
+@@ -184,6 +185,12 @@
+             return TRUE;
+         }
+ 
++#ifndef KWIN_NO_XSYNC
++    // grumble --- this is here because xsync_event_base isn't const
++    if( e->type == XSyncAlarmNotify + xsync_event_base )
++        return DispatchXSyncAlarmEvent((XSyncAlarmNotifyEvent*)e);
++#endif
++
+     // events that should be handled before Clients can get them
+     switch (e->type) 
+         {
+@@ -812,6 +819,11 @@
+                 getWmClientLeader();
+             else if( e->atom == qt_window_role )
+                 window_role = getStringProperty( window(), qt_window_role );
++#ifndef KWIN_NO_XSYNC
++            else if( e->atom == atoms->qt_sync_counter ) {
++                lookupXSyncCounter();
++            }
++#endif
+             break;
+         }
+     }
+Index: geometry.cpp
+===================================================================
+RCS file: /home/kde/kdebase/kwin/geometry.cpp,v
+retrieving revision 2.48
+diff -u -r2.48 geometry.cpp
+--- geometry.cpp	19 Jan 2004 15:07:14 -0000	2.48
++++ geometry.cpp	1 Feb 2004 04:40:54 -0000
+@@ -23,6 +23,7 @@
+ #include <kglobal.h>
+ #include <qpainter.h>
+ #include <kwin.h>
++#include <unistd.h>
+ 
+ #include "placement.h"
+ #include "notifications.h"
+@@ -1116,7 +1117,6 @@
+     return true;
+     }
+ 
+-
+ /*!
+   Reimplemented to inform the client about the new window position.
+  */
+@@ -1155,9 +1155,87 @@
+         // SELI TODO won't this be too expensive?
+         updateWorkareaDiffs();
+         sendSyntheticConfigureNotify(); // TODO optimize this?
++    }
++}
++
++void Client::queueGeometry( int x, int y, int w, int h, ForceGeometry_t force )
++{
++    assert( !inGeometryUpdate );
++    
++    if( force == NormalGeometrySet && frame_geometry == QRect( x, y, w, h ))
++        return;
++
++    // check if we are resizing outwards
++    isOutward = (w > frame_geometry.width()) && (h > frame_geometry.height());
++
++    queuedFrameGeometry = calcFrameGeometry( x, y, w, h );
++    client_size = calcClientSize( x, y, w, h );
++
++    if( !kwin_invert_order || !isOutward ) 
++    {
++        frame_geometry = calcFrameGeometry( x, y, w, h );
++        updateWorkareaDiffs();
++    }
++
++    if( block_geometry == 0 )
++    {
++        if( !kwin_invert_order || !isOutward )
++        {
++            XMoveResizeWindow( qt_xdisplay(), frameId(), x, y, w, h );
++            resizeDecoration( QSize( w, h ) );
++        }
++        
++        if( !isShade() )
++        {
++            QSize cs = clientSize();
++            XMoveResizeWindow( qt_xdisplay(), wrapperId(), clientPos().x(), clientPos().y(),
++                               cs.width(), cs.height() );
++            XMoveResizeWindow( qt_xdisplay(), window(), 0, 0, cs.width(), cs.height() );
++        }
++
++        if( shape() )
++            updateShape();
++
++        sendSyntheticConfigureNotify();
++    }
++
++    inGeometryUpdate = true;
++}
++
++void Client::commitGeometry() 
++{
++    assert( inGeometryUpdate );
++
++    if( kwin_invert_order && isOutward )
++    {
++        frame_geometry = queuedFrameGeometry;
++        updateWorkareaDiffs();
++    
++        if( block_geometry == 0 )
++        {
++            XMoveResizeWindow( qt_xdisplay(), frameId(), frame_geometry.x(),
++                               frame_geometry.y(), frame_geometry.width(),
++                               frame_geometry.height() );
++            resizeDecoration( QSize( frame_geometry.width(), frame_geometry.height() ) );
+         }
+     }
+ 
++    inGeometryUpdate = false;
++}
++
++QRect Client::calcFrameGeometry( int x, int y, int w, int h )
++{
++    return QRect(x, y, w, h);
++}
++
++QSize Client::calcClientSize( int x, int y, int w, int h )
++{
++    if( !isShade() )
++        return QSize(w - border_left - border_right, 
++                     h - border_top - border_bottom );
++    return QSize( w - border_left - border_right, client_size.height() );
++}
++
+ void Client::plainResize( int w, int h, ForceGeometry_t force )
+     { // TODO make this deffered with isResize() ? old kwin did
+     if( force == NormalGeometrySet && frame_geometry.size() == QSize( w, h ))
+@@ -1513,6 +1591,7 @@
+     if( QApplication::activePopupWidget() != NULL )
+         return false; // popups have grab
+     bool has_grab = false;
++
+     if( mode == PositionCenter )
+         setCursor( sizeAllCursor ); // change from arrow cursor if moving
+     if( XGrabPointer( qt_xdisplay(), frameId(), False, ButtonPressMask | ButtonReleaseMask | PointerMotionMask,
+@@ -1540,6 +1619,11 @@
+         eater = new EatAllPaintEvents;
+         kapp->installEventFilter( eater );
+         }
++
++#ifndef KWIN_NO_XSYNC
++    enterSyncMoveResize();
++#endif
++        
+     Notify::raise( isResize() ? Notify::ResizeStart : Notify::MoveStart );
+     return true;
+     }
+@@ -1551,12 +1635,18 @@
+         setGeometry( initialMoveResizeGeom );
+     else
+         setGeometry( moveResizeGeom );
++        
+ // FRAME    update();
++
+     Notify::raise( isResize() ? Notify::ResizeEnd : Notify::MoveEnd );
+     }
+ 
+ void Client::leaveMoveResize()
+     {
++#ifndef KWIN_NO_XSYNC
++    leaveSyncMoveResize();
++#endif
++    
+     clearbound();
+     if (geometryTip)
+         {
+@@ -1598,6 +1688,23 @@
+         else
+             return;
+         }
++#ifndef KWIN_NO_XSYNC
++    else if( !kwin_disable_sync )   // first resize should happen immediately
++        {
++            // check for redraw timeout
++            if( inGeometryUpdate )
++            {
++                if( syncTimeoutExpired() )
++                    commitGeometry();
++                else
++                    return;
++            }
++
++            // check for redraw limit
++            if( !redrawLimitReached() )
++                return;
++        }
++#endif
+ 
+     // ShadeHover or ShadeActive, ShadeNormal was already avoided above
+     if ( mode != PositionCenter && shade_mode != ShadeNone ) // SHADE
+@@ -1748,7 +1855,22 @@
+         {
+         if(( isResize() ? options->resizeMode : options->moveMode ) == Options::Opaque )
+             {
+-            setGeometry( moveResizeGeom );
++#ifndef KWIN_NO_XSYNC
++            if( !kwin_disable_sync )
++            {
++                // handle apps that have a counter
++                if( syncCounter )
++                    queueGeometry( moveResizeGeom );
++                else
++                    {
++                    queueGeometry( moveResizeGeom );
++                    commitGeometry();
++                    }
++            }
++            else
++#else
++                setGeometry( moveResizeGeom );
++#endif
+             positionGeometryTip();
+             }
+         else if(( isResize() ? options->resizeMode : options->moveMode ) == Options::Transparent )
+Index: main.cpp
+===================================================================
+RCS file: /home/kde/kdebase/kwin/main.cpp,v
+retrieving revision 1.75
+diff -u -r1.75 main.cpp
+--- main.cpp	26 Oct 2003 10:07:54 -0000	1.75
++++ main.cpp	1 Feb 2004 04:40:54 -0000
+@@ -25,6 +25,7 @@
+ 
+ #include "atoms.h"
+ #include "options.h"
++#include "sync.h"
+ #include "sm.h"
+ 
+ #define INT8 _X11INT8
+@@ -112,6 +113,10 @@
+ 
+     // create workspace.
+     (void) new Workspace( isSessionRestored() );
++    
++#ifndef KWIN_NO_XSYNC
++    KWinInitSync();    // initialize synchronization
++#endif
+ 
+     syncX(); // trigger possible errors, there's still a chance to abort
+ 
+--- /dev/null	1969-12-31 19:00:00.000000000 -0500
++++ sync.h	2004-02-01 20:42:29.000000000 -0500
+@@ -0,0 +1,31 @@
++/*****************************************************************
++ KWin - the KDE window manager
++ This file is part of the KDE project.
++
++Copyright (C) 1999, 2000 Matthias Ettrich <ettrich@kde.org>
++Copyright (C) 2003 Lubos Lunak <l.lunak@kde.org>
++
++You can Freely distribute this program under the GNU General Public
++License. See the file "COPYING" for the exact licensing terms.
++******************************************************************/
++
++#if !defined(SYNC_H) && !defined(KWIN_NO_XSYNC)
++#define SYNC_H
++
++#include <X11/Xlib.h>
++#include <X11/extensions/sync.h>
++
++namespace KWinInternal
++{
++    extern bool kwin_use_xsync;       // should we use the XSYNC extension?
++    extern bool kwin_disable_sync;    // disable synchronization?
++    extern bool kwin_invert_order;    // invert order of client/window repaint
++    extern int  xsync_event_base;     // base of XSync events
++    extern int  xsync_error_base;     // base of XSYnc errors
++    extern int  sync_counter_count;   // count of active sync counters
++    
++    void KWinInitSync();
++    bool DispatchXSyncAlarmEvent(XSyncAlarmNotifyEvent*);    
++} // namespace
++
++#endif
+--- /dev/null	1969-12-31 19:00:00.000000000 -0500
++++ sync.cpp	2004-02-01 23:38:01.000000000 -0500
+@@ -0,0 +1,247 @@
++/*****************************************************************
++ KWin - the KDE window manager
++ This file is part of the KDE project.
++
++Copyright (C) 1999, 2000 Matthias Ettrich <ettrich@kde.org>
++Copyright (C) 2003 Lubos Lunak <l.lunak@kde.org>
++
++You can Freely distribute this program under the GNU General Public
++License. See the file "COPYING" for the exact licensing terms.
++******************************************************************/
++
++#ifndef KWIN_NO_XSYNC
++
++#include <kconfig.h>
++#include <qmap.h>
++#include "sync.h"
++#include "atoms.h"
++#include "client.h"
++
++namespace KWinInternal
++{
++    bool kwin_use_xsync;       // should we use the XSYNC extension?
++    bool kwin_disable_sync;    // Disable use of synchronization
++    bool kwin_invert_order;    // Invert order of client/window repaint
++    int  xsync_event_base;     // base of XSYNC events
++    int  xsync_error_base;     // base of XSYNC errors
++    int  kwin_resize_limit;    // minimum time (msecs) between resize events
++    int  kwin_move_limit;      // minimum time (msecs) between move events
++    int  kwin_redraw_timeout;  // maximum time (msecs) between redraws
++    int  sync_alarm_count;     // count of active sync alarms
++    
++    typedef QMap<XSyncAlarm, Client*> alarm_map_type;
++    alarm_map_type alarm_map;  // maps alarm IDs to Client objects   
++    
++    // initialize synchronization support
++    void KWinInitSync() 
++    {
++        // intialize SYNC extension
++        int xsync_major, xsync_minor;
++        if( XSyncQueryExtension( qt_xdisplay(), &xsync_event_base, &xsync_error_base) &&
++            XSyncInitialize( qt_xdisplay(), &xsync_major, &xsync_minor ) ) 
++            {
++                kwin_use_xsync = true;
++                kdDebug( 1212 ) << "Using SYNC extension" << endl;
++            }
++         
++        // read configuration parameters
++        KConfig cfg("kwinrc");
++        cfg.setGroup("Windows");
++        
++        int resFps = cfg.readNumEntry( "ResizeLimit", 25 );
++        int movFps = cfg.readNumEntry( "MoveLimit", 40 );
++        kwin_resize_limit = 1000 / resFps;
++        kwin_move_limit = 1000 / movFps;
++        kwin_redraw_timeout = cfg.readNumEntry( "RedrawTimeout", 500 );
++        kwin_disable_sync = cfg.readBoolEntry( "DisableSync", false );
++        kwin_invert_order = cfg.readBoolEntry( "InvertDrawOrder", false );
++
++        if( kwin_disable_sync )
++            kwin_use_xsync = false;
++
++        // print debug messages
++        kdDebug( 1212 ) << "Using synchronization: " << !kwin_disable_sync << endl;
++        kdDebug( 1212 ) << "Limiting resize rate to " << resFps << "fps" << endl;
++        kdDebug( 1212 ) << "Limiting move rate to " << movFps << "fps" << endl;
++        kdDebug( 1212 ) << "Setting redraw timeout to " << kwin_redraw_timeout << "ms" << endl;
++        kdDebug( 1212 ) << "Inverted redraw mode: " << kwin_invert_order << endl;
++    }
++    
++    // handle XSyncAlarmNotifyEvent by updating proper client
++    bool DispatchXSyncAlarmEvent(XSyncAlarmNotifyEvent* ev)
++    {
++        alarm_map_type::Iterator itr = alarm_map.find( ev->alarm );
++
++        if( ev->state == XSyncAlarmActive && itr != alarm_map.end() )
++            return itr.data()->processXSyncAlarmEvent( ev );
++
++        if( ev->state == XSyncAlarmInactive && itr != alarm_map.end() )
++        {
++            alarm_map.erase( ev->alarm );
++            return true;
++        }
++
++        // we don't need to do anything with this event
++        if( ev->state == XSyncAlarmDestroyed )
++            return true;
++
++        kdDebug( 1212 ) << "Ignoring event for unknown alarm: " << ev->alarm << endl;
++        return true;
++    }
++    
++    // looks up the XSyncCounter for the current client
++    void Client::lookupXSyncCounter() 
++    {
++        if( !kwin_use_xsync )
++            return; 
++
++        Atom retType;
++        unsigned long nItemRet;
++        unsigned long byteRet;
++        int formatRet;
++        unsigned char* propRet;
++        int ret = XGetWindowProperty( qt_xdisplay(), window(), atoms->qt_sync_counter,
++                                    0, 1, false, atoms->qt_sync_type, &retType,
++                                    &formatRet, &nItemRet, &byteRet, &propRet );
++    
++        if( ret == Success && formatRet == 32 )
++            syncCounter = *(XSyncCounter*)propRet;
++
++        // handle counter property getting changed
++        if( syncAlarm )
++            destroyXSyncAlarm();
++
++        createXSyncAlarm();
++    
++        // print debug messages
++        kdDebug( 1212 ) << "Found XSyncCounter " << syncCounter << endl;
++    }
++    
++    // create an alarm, initialized to inactive
++    // return value is true if an alarm exists, false otherwise
++    void Client::createXSyncAlarm() 
++    {
++        if( !kwin_use_xsync )
++            return;
++
++        assert( !syncAlarm );
++    
++        // set up an alarm to trigger each time
++        // the counter is incremented by 1
++        XSyncAlarmAttributes attrs;
++        attrs.trigger.counter = None;
++        attrs.trigger.value_type = XSyncAbsolute;
++        XSyncIntToValue( &attrs.trigger.wait_value, 1 );
++        attrs.trigger.test_type = XSyncPositiveTransition;
++        XSyncIntToValue( &attrs.delta, 1 );
++        attrs.events = true;
++    
++        syncAlarm = XSyncCreateAlarm( qt_xdisplay(),
++                                    XSyncCACounter | XSyncCAValueType |
++                                    XSyncCAValue | XSyncCATestType | XSyncCADelta |
++                                    XSyncCAEvents, &attrs );        
++        
++        // print debug messages
++        ++sync_alarm_count;
++        kdDebug( 1212 ) << "Created XSyncAlarm " << syncAlarm << endl;
++    }
++    
++    // destroy the client's XSyncAlarm (if it exists)
++    void Client::destroyXSyncAlarm() 
++    {
++        if( kwin_use_xsync && syncAlarm ) 
++        {
++            XSyncDestroyAlarm( qt_xdisplay(), syncAlarm );
++            syncAlarm = 0;
++            
++            --sync_alarm_count;
++            kdDebug( 1212)  << "Destroying XSyncAlarm: " 
++                            << sync_alarm_count << " left" << endl;
++        }
++    }
++    
++    // update the geometry of the client who just updated
++    bool Client::processXSyncAlarmEvent(XSyncAlarmNotifyEvent* ev)
++    {
++        if( inGeometryUpdate && ev->state == XSyncAlarmActive )
++            commitGeometry();
++
++        return true;
++    }
++
++    // begin a synchronized move/resize
++    void Client::enterSyncMoveResize()
++    {
++        if( kwin_use_xsync && syncAlarm ) 
++        {
++            // activate the client's alarm
++            alarm_map[syncAlarm] = this;
++    
++            XSyncAlarmAttributes attrs;
++            attrs.trigger.counter = syncCounter;
++            attrs.trigger.value_type = XSyncRelative;
++            XSyncChangeAlarm( qt_xdisplay(), syncAlarm, XSyncCACounter
++                              | XSyncCAValueType, &attrs );
++                                       
++            // start the redraw stopwatch
++            redrawStopwatch.restart();
++        }
++    }
++    
++    // end a synchronize move/resize
++    void Client::leaveSyncMoveResize()
++    {
++        if( kwin_use_xsync && syncAlarm )
++        {
++            // commit any pending geometry updates
++            if( inGeometryUpdate )
++                commitGeometry();
++
++            // deactivate client's alarm
++            XSyncAlarmAttributes attrs;
++            attrs.trigger.counter = None;
++            attrs.trigger.value_type = XSyncAbsolute;
++            XSyncChangeAlarm( qt_xdisplay(), syncAlarm, XSyncCACounter
++                              | XSyncCAValueType, &attrs);
++        }
++    }
++    
++    // check if enough time has passed since redraw
++    bool Client::redrawLimitReached()
++    {
++        int elapsed = redrawStopwatch.elapsed();
++
++        // we should not limit redraws
++        if( kwin_disable_sync )
++            return false;
++
++        // for apps with sync counters, cap at a fixed 50fps
++        if( syncCounter && (elapsed > 20) )
++            return true;
++
++        // not enough time has passed since last redraw
++        if( isResize() && (elapsed < kwin_resize_limit) )
++            return false;
++
++        if( isMove() && (elapsed < kwin_move_limit) )
++            return false;
++
++        redrawStopwatch.restart();
++        return true;
++    }
++
++    // check if a redraw has timed out
++    bool Client::syncTimeoutExpired()
++    {
++        int elapsed = redrawStopwatch.elapsed();
++
++        // the timeout has not expired
++        if( elapsed < kwin_redraw_timeout )
++            return false;
++
++        redrawStopwatch.restart();
++        return true;
++    }
++}
++
++#endif

@@ -1,0 +1,8 @@
+digraph CFG {
+ENTRY [shape=box,fontsize=10,label="ENTRY\na0 = ldi 0 \nb0 = ldi 1 \n"];
+ENTRY -> LOOP;
+LOOP [shape=box,fontsize=10,label="LOOP\na1 = phi a0 a2 \na2 = add a1 b0 \na2 != b0 : LOOP EXIT \n"];
+LOOP -> LOOP;
+LOOP -> EXIT;
+EXIT [shape=box,fontsize=10,label="EXIT\nret a2 \n"];
+ }

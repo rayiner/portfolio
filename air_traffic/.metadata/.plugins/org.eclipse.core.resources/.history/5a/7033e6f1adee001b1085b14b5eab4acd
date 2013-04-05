@@ -1,0 +1,17 @@
+package edu.gatech.ccbs;
+
+import java.util.*;
+
+public class PathModel extends Model {
+	public ArrayList intersections;
+	public ArrayList realEndpoints;
+	
+	public PathModel() {
+		intersections = new ArrayList();
+		realEndpoints = new ArrayList();
+	}
+
+	public String stringify() {
+		StringBuffer buf;
+	}
+}

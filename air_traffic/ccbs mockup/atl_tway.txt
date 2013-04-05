@@ -1,0 +1,429 @@
+	   int[] taxiSG_xpts = {57, 57, 110, 130, 448, 448, 441, 441, 135, 119, 64, 64};
+       int[] taxiSG_ypts = {597, 582, 582, 570, 570, 597, 597, 577, 577, 587, 587, 597};
+       mapX.add(taxiSG_xpts);
+       mapY.add(taxiSG_ypts);
+       
+       int[] taxiSG2_xpts = {72, 72, 80, 80};
+       int[] taxiSG2_ypts = {597, 587, 587, 597};
+       mapX.add(taxiSG2_xpts);
+       mapY.add(taxiSG2_ypts);
+       
+       int[] taxiSG4_xpts = {135, 119, 132, 132, 141, 160};
+       int[] taxiSG4_ypts = {597, 587, 578, 585, 592, 597};
+       mapX.add(taxiSG4_xpts);
+       mapY.add(taxiSG4_ypts);
+       
+       int[] taxiSG6_xpts = {193, 179, 179, 186, 186, 199, 218};
+       int[] taxiSG6_ypts = {597, 581, 577, 577, 583, 593, 597};
+       mapX.add(taxiSG6_xpts);
+       mapY.add(taxiSG6_ypts);
+       
+       int[] taxiSG12_xpts = {252, 270, 278, 278, 288, 284, 273};
+       int[] taxiSG12_ypts = {597, 591, 582, 576, 576, 583, 597};
+       mapX.add(taxiSG12_xpts);
+       mapY.add(taxiSG12_ypts);
+       
+       int[] taxiSG14_xpts = {340, 366, 373, 373, 382, 380, 367};
+       int[] taxiSG14_ypts = {597, 589, 583, 576, 576, 582, 597};
+       mapX.add(taxiSG14_xpts);
+       mapY.add(taxiSG14_ypts);
+       
+       int[] taxiSG16_xpts = {424, 431, 431, 423};
+       int[] taxiSG16_ypts = {577, 577, 597, 597};
+       mapX.add(taxiSG16_xpts);
+       mapY.add(taxiSG16_ypts);
+       
+       int[] taxiSC_xpts = {235, 235, 228, 247, 243, 243};
+       int[] taxiSC_ypts = {570, 442, 438, 438, 443, 570};
+       mapX.add(taxiSC_xpts);
+       mapY.add(taxiSC_ypts);
+       
+       int[] taxiSJ_xpts = {248, 248, 243, 254, 254};
+       int[] taxiSJ_ypts = {570, 446, 438, 438, 570};
+       mapX.add(taxiSJ_xpts);
+       mapY.add(taxiSJ_ypts);
+       
+       int[] taxiSJ1_xpts = {248, 243, 243, 248};
+       int[] taxiSJ1_ypts = {531, 531, 526, 526};
+       mapX.add(taxiSJ1_xpts);
+       mapY.add(taxiSJ1_ypts);
+       
+       int[] taxiSJ2_xpts = {248, 243, 243, 248};
+       int[] taxiSJ2_ypts = {491, 491, 485, 485};
+       mapX.add(taxiSJ2_xpts);
+       mapY.add(taxiSJ2_ypts);
+       
+       int[] taxiR_xpts = {54, 54, 58, 58, 437, 437, 443, 443};
+       int[] taxiR_ypts = {438, 420, 420, 435, 435, 420, 420, 438};
+       mapX.add(taxiR_xpts);
+       mapY.add(taxiR_ypts);
+       
+       int[] taxiR3_xpts = {135, 135, 145, 145};
+       int[] taxiR3_ypts = {435, 420, 420, 435};
+       mapX.add(taxiR3_xpts);
+       mapY.add(taxiR3_ypts);
+       
+       int[] taxiR7_xpts = {260, 260, 270, 270};
+       int[] taxiR7_ypts = {435, 420, 420, 435};
+       mapX.add(taxiR7_xpts);
+       mapY.add(taxiR7_ypts);
+       
+       int[] taxiR11_xpts = {342, 342, 353, 353};
+       int[] taxiR11_ypts = {435, 420, 420, 435};
+       mapX.add(taxiR11_xpts);
+       mapY.add(taxiR11_ypts);
+       
+       int[] taxiR6_xpts = {301, 301, 307, 307};
+       int[] taxiR6_ypts = {438, 451, 451, 438};
+       mapX.add(taxiR6_xpts);
+       mapY.add(taxiR6_ypts);
+       
+       int[] taxiR10_xpts = {342, 337, 344, 350};
+       int[] taxiR10_ypts = {438, 451, 451, 438};
+       mapX.add(taxiR10_xpts);
+       mapY.add(taxiR10_ypts);
+       
+       int[] taxiR12_xpts = {363, 363, 370, 370};
+       int[] taxiR12_ypts = {438, 460, 460, 438};
+       mapX.add(taxiR12_xpts);
+       mapY.add(taxiR12_ypts);
+       
+       int[] taxiP_xpts = {54, 54, 57, 57};
+       int[] taxiP_ypts = {412, 374, 374, 412};
+       mapX.add(taxiP_xpts);
+       mapY.add(taxiP_ypts);
+       
+       int[] taxiN_xpts = {54, 450, 450, 54};
+       int[] taxiN_ypts = {389, 389, 393, 393};
+       mapX.add(taxiN_xpts);
+       mapY.add(taxiN_ypts);
+       
+       int[] taxiN2_xpts = {103, 132, 132, 158, 142, 124, 124};
+       int[] taxiN2_ypts = {393, 410, 412, 412, 409, 397, 393};
+       mapX.add(taxiN2_xpts);
+       mapY.add(taxiN2_ypts);
+       
+       int[] taxiN4_xpts = {168, 199, 199, 224, 199, 193, 192, 195};
+       int[] taxiN4_ypts = {393, 410, 412, 412, 406, 401, 395, 393};
+       mapX.add(taxiN4_xpts);
+       mapY.add(taxiN4_ypts);
+       
+       int[] taxiN6_xpts = {279, 279, 254, 269, 296, 302};
+       int[] taxiN6_ypts = {393, 398, 412, 412, 394, 393};
+       mapX.add(taxiN6_xpts);
+       mapY.add(taxiN6_ypts);
+       
+       int[] taxiN10_xpts = {355, 355, 344, 333, 351, 351, 378};
+       int[] taxiN10_ypts = {393, 397, 410, 412, 412, 409, 393};
+       mapX.add(taxiN10_xpts);
+       mapY.add(taxiN10_ypts);
+       
+       int[] taxiN5_xpts = {203, 203, 212, 212};
+       int[] taxiN5_ypts = {389, 374, 374, 389};
+       mapX.add(taxiN5_xpts);
+       mapY.add(taxiN5_ypts);
+       
+       int[] taxiN12_xpts = {443, 449, 444, 438};
+       int[] taxiN12_ypts = {412, 393, 393, 412};
+       mapX.add(taxiN12_xpts);
+       mapY.add(taxiN12_ypts);
+       
+       int[] taxiN13_xpts = {450, 454, 448, 445};
+       int[] taxiN13_ypts = {389, 374, 374, 389};
+       mapX.add(taxiN13_xpts);
+       mapY.add(taxiN13_ypts);
+       
+       int[] taxiT_xpts = {129, 129, 135, 135};
+       int[] taxiT_ypts = {389, 344, 344, 389};
+       mapX.add(taxiT_xpts);
+       mapY.add(taxiT_ypts);
+       
+       int[] taxiS_xpts = {306, 306, 315, 315};
+       int[] taxiS_ypts = {389, 357, 357, 389};
+       mapX.add(taxiS_xpts);
+       mapY.add(taxiS_ypts);
+       
+       int[] taxiK_xpts = {429, 415, 411, 410, 410, 399, 404, 407, 422};
+       int[] taxiK_ypts = {412, 392, 386, 376, 374, 374, 388, 391, 412};
+       mapX.add(taxiK_xpts);
+       mapY.add(taxiK_ypts);
+       
+       int[] taxiL_xpts = {53, 53, 415, 415, 61, 59, 56, 56};
+       int[] taxiL_ypts = {367, 342, 342, 348, 348, 354, 356, 367};
+       mapX.add(taxiL_xpts);
+       mapY.add(taxiL_ypts);
+       
+       int[] taxiM_xpts = {56, 60, 574, 574, 568, 568};
+       int[] taxiM_ypts = {357, 353, 353, 367, 367, 358};
+       mapX.add(taxiM_xpts);
+       mapY.add(taxiM_ypts);
+       
+       int[] taxiM2_xpts = {91, 91, 98, 98};
+       int[] taxiM2_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM2_xpts);
+       mapY.add(taxiM2_ypts);
+       
+       int[] taxiM4_xpts = {150, 151, 156, 157};
+       int[] taxiM4_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM4_xpts);
+       mapY.add(taxiM4_ypts);
+       
+       int[] taxiM6_xpts = {205, 205, 211, 211};
+       int[] taxiM6_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM6_xpts);
+       mapY.add(taxiM6_ypts);
+       
+       int[] taxiM10_xpts = {245, 249, 256, 251};
+       int[] taxiM10_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM10_xpts);
+       mapY.add(taxiM10_ypts);
+       
+       int[] taxiM12_xpts = {279, 265, 273, 287};
+       int[] taxiM12_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM12_xpts);
+       mapY.add(taxiM12_ypts);
+       
+       int[] taxiM14_xpts = {346, 362, 373, 356};
+       int[] taxiM14_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM14_xpts);
+       mapY.add(taxiM14_ypts);
+       
+       int[] taxiM16_xpts = {449, 451, 458, 456};
+       int[] taxiM16_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM16_xpts);
+       mapY.add(taxiM16_ypts);
+       
+       int[] taxiM18_xpts = {471, 471, 480, 480};
+       int[] taxiM18_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM18_xpts);
+       mapY.add(taxiM18_ypts);
+       
+       int[] taxiM20_xpts = {553, 553, 560, 560};
+       int[] taxiM20_ypts = {367, 357, 357, 367};
+       mapX.add(taxiM20_xpts);
+       mapY.add(taxiM20_ypts);
+       
+       int[] taxiJ_xpts = {415, 409, 409, 417, 423, 430, 423, 417, 415};
+       int[] taxiJ_ypts = {348, 348, 367, 373, 389, 389, 373, 367, 365};
+       mapX.add(taxiJ_xpts);
+       mapY.add(taxiJ_ypts);
+       
+       int[] taxiL1_xpts = {91, 91, 98, 98};
+       int[] taxiL1_ypts = {353, 348, 348, 353};
+       mapX.add(taxiL1_xpts);
+       mapY.add(taxiL1_ypts);
+       
+       int[] taxiL3_xpts = {150, 147, 152, 155};
+       int[] taxiL3_ypts = {353, 348, 348, 353};
+       mapX.add(taxiL3_xpts);
+       mapY.add(taxiL3_ypts);
+       
+       int[] taxiL4_xpts = {187, 187, 193, 193};
+       int[] taxiL4_ypts = {353, 348, 348, 353};
+       mapX.add(taxiL4_xpts);
+       mapY.add(taxiL4_ypts);
+       
+       int[] taxiL5_xpts = {230, 230, 237, 237};
+       int[] taxiL5_ypts = {353, 348, 348, 353};
+       mapX.add(taxiL5_xpts);
+       mapY.add(taxiL5_ypts);
+       
+       int[] taxiL6_xpts = {277, 277, 284, 284};
+       int[] taxiL6_ypts = {353, 348, 348, 353};
+       mapX.add(taxiL6_xpts);
+       mapY.add(taxiL6_ypts);
+       
+       int[] taxiL10_xpts = {368, 368, 374, 374};
+       int[] taxiL10_ypts = {353, 336, 336, 353};
+       mapX.add(taxiL10_xpts);
+       mapY.add(taxiL10_ypts);
+
+	int[] taxiD_xpts = {387, 392, 392, 390, 392, 399, 399, 394, 394, 387, 398, 398, 399, 400, 400, 398, 395, 395};
+	int[] taxiD_ypts = {388, 332, 183, 121, 112, 112, 121, 126, 162, 165, 167, 224, 305, 338, 358, 367, 373, 388};
+	mapX.add(taxiD_xpts);
+	mapY.add(taxiD_ypts);
+	
+	int[] taxiDixie_xpts = {399, 399, 393, 393};
+	int[] taxiDixie_ypts = {307, 244, 244, 307};
+	mapX.add(taxiDixie_xpts);
+	mapY.add(taxiDixie_ypts);
+
+      int[] taxiE_xpts = {140, 144, 164, 180, 582, 582, 612, 612, 616, 616, 585, 580, 179, 156, 154};
+        int[] taxiE_ypts = {224, 218, 208, 204, 204, 197, 197, 183, 183, 210, 210, 208, 208, 215, 224};
+        mapX.add(taxiE_xpts);
+        mapY.add(taxiE_ypts);
+
+        int[] taxiF_xpts = {152, 178, 189, 391, 391, 199, 180, 153};
+        int[] taxiF_ypts = {224, 217, 215, 215, 219, 219, 221, 229};
+        mapX.add(taxiF_xpts);
+        mapY.add(taxiF_ypts);
+
+        int[] taxiH_xpts = {179, 179, 174, 171, 169, 168, 173, 173, 179, 183, 183};
+        int[] taxiH_ypts = {218, 176, 163, 159, 154, 141, 141, 147, 155, 161, 204};
+        mapX.add(taxiH_xpts);
+        mapY.add(taxiH_ypts);
+
+        int[] taxiF2_xpts = {184, 191, 200, 196};
+        int[] taxiF2_ypts = {217, 208, 208, 215};
+        mapX.add(taxiF2_xpts);
+        mapY.add(taxiF2_ypts);
+
+        int[] taxiF3_xpts = {230, 230, 237, 237};
+        int[] taxiF3_ypts = {215, 208, 208, 215};
+        mapX.add(taxiF3_xpts);
+        mapY.add(taxiF3_ypts);
+
+        int[] taxiF4_xpts = {275, 275, 280, 280};
+        int[] taxiF4_ypts = {215, 208, 208, 215};
+        mapX.add(taxiF4_xpts);
+        mapY.add(taxiF4_ypts);
+
+        int[] taxiF5_xpts = {321, 321, 326, 326};
+        int[] taxiF5_ypts = {215, 208, 208, 215};
+        mapX.add(taxiF5_xpts);
+        mapY.add(taxiF5_ypts);
+
+        int[] taxiE1_xpts = {193, 208, 213, 198};
+        int[] taxiE1_ypts = {204, 182, 182, 204};
+        mapX.add(taxiE1_xpts);
+        mapY.add(taxiE1_ypts);
+
+        int[] taxiE3_xpts = {234, 258, 259, 281, 257, 259};
+        int[] taxiE3_ypts = {204, 188, 182, 182, 196, 204};
+        mapX.add(taxiE3_xpts);
+        mapY.add(taxiE3_ypts);
+
+        int[] taxiE5_xpts = {316, 301, 306, 321};
+        int[] taxiE5_ypts = {204, 182, 182, 204};
+        mapX.add(taxiE5_xpts);
+        mapY.add(taxiE5_ypts);
+
+        int[] taxiE7_xpts = {330, 348, 348, 367, 359, 345, 344};
+        int[] taxiE7_ypts = {204, 188, 182, 182, 186, 199, 204};
+        mapX.add(taxiE7_xpts);
+        mapY.add(taxiE7_ypts);
+
+        int[] taxiE11_xpts = {480, 467, 475, 488};
+        int[] taxiE11_ypts = {204, 182, 182, 204};
+        mapX.add(taxiE11_xpts);
+        mapY.add(taxiE11_ypts);
+
+        int[] taxiE13_xpts = {582, 582, 585, 585};
+        int[] taxiE13_ypts = {200, 182, 182, 197};
+        mapX.add(taxiE13_xpts);
+        mapY.add(taxiE13_ypts);
+
+        int[] taxiE10_xpts = {458, 464, 471, 465};
+        int[] taxiE10_ypts = {208, 215, 215, 208};
+        mapX.add(taxiE10_xpts);
+        mapY.add(taxiE10_ypts);
+
+        int[] taxiB_xpts = {178, 250, 250, 256, 510, 532, 609, 616, 616, 613, 613, 607, 532, 510, 250, 238, 180};
+        int[] taxiB_ypts = {155, 155, 160, 164, 164, 155, 155, 161, 178, 178, 163, 159, 159, 167, 167, 160, 160};
+        mapX.add(taxiB_xpts);
+        mapY.add(taxiB_ypts);
+
+        int[] taxiB1_xpts = {190, 190, 194, 194};
+        int[] taxiB1_ypts = {155, 141, 141, 155};
+        mapX.add(taxiB1_xpts);
+        mapY.add(taxiB1_ypts);
+
+        int[] taxiB2_xpts = {213, 227, 236, 219};
+        int[] taxiB2_ypts = {176, 158, 158, 176};
+        mapX.add(taxiB2_xpts);
+        mapY.add(taxiB2_ypts);
+
+        int[] taxiB3_xpts = {245, 256, 256, 280, 260, 250};
+        int[] taxiB3_ypts = {156, 144, 141, 141, 148, 156};
+        mapX.add(taxiB3_xpts);
+        mapY.add(taxiB3_ypts);
+
+        int[] taxiB4_xpts = {270, 270, 275, 275};
+        int[] taxiB4_ypts = {176, 167, 167, 176};
+        mapX.add(taxiB4_xpts);
+        mapY.add(taxiB4_ypts);
+
+        int[] taxiB5_xpts = {300, 335, 348, 320, 318};
+        int[] taxiB5_ypts = {164, 141, 141, 155, 164};
+        mapX.add(taxiB5_xpts);
+        mapY.add(taxiB5_ypts);
+
+        int[] taxiB6_xpts = {298, 301, 301, 318, 318, 325};
+        int[] taxiB6_ypts = {176, 173, 167, 167, 172, 176};
+        mapX.add(taxiB6_xpts);
+        mapY.add(taxiB6_ypts);
+
+        int[] taxiB7_xpts = {408, 412, 411, 390, 403, 406, 435};
+        int[] taxiB7_ypts = {164, 159, 155, 141, 141, 147, 164};
+        mapX.add(taxiB7_xpts);
+        mapY.add(taxiB7_ypts);
+
+        int[] taxiB11_xpts = {468, 474, 474, 470, 453, 459, 498};
+        int[] taxiB11_ypts = {164, 161, 155, 151, 141, 141, 164};
+        mapX.add(taxiB11_xpts);
+        mapY.add(taxiB11_ypts);
+
+        int[] taxiB10_xpts = {467, 470, 466, 485, 479, 476};
+        int[] taxiB10_ypts = {176, 170, 167, 167, 171, 176};
+        mapX.add(taxiB10_xpts);
+        mapY.add(taxiB10_ypts);
+
+        int[] taxiB13_xpts = {554, 554, 551, 551};
+        int[] taxiB13_ypts = {155, 140, 140, 155};
+        mapX.add(taxiB13_xpts);
+        mapY.add(taxiB13_ypts);
+
+        int[] taxiB15_xpts = {558, 558, 562, 562};
+        int[] taxiB15_ypts = {155, 140, 140, 155};
+        mapX.add(taxiB15_xpts);
+        mapY.add(taxiB15_ypts);
+
+        int[] taxiA_xpts = {169, 171, 176, 184, 233, 244, 470, 479, 486, 489, 557, 561, 563, 563, 559, 559, 556, 496, 488, 468, 245, 241, 233, 186, 178, 174, 174};
+        int[] taxiA_ypts = {135, 127, 119, 115, 115, 120, 120, 118, 114, 111, 111, 114, 118, 135, 135, 116, 115, 114, 118, 124, 124, 122, 118, 118, 121, 126, 135};
+        mapX.add(taxiA_xpts);
+        mapY.add(taxiA_ypts);
+
+        int[] taxiA3_xpts = {261, 261, 266, 266};
+        int[] taxiA3_ypts = {120, 109, 109, 120};
+        mapX.add(taxiA3_xpts);
+        mapY.add(taxiA3_ypts);
+
+        int[] taxiA4_xpts = {296, 301, 301, 307, 306, 310};
+        int[] taxiA4_ypts = {124, 130, 135, 135, 128, 124};
+        mapX.add(taxiA4_xpts);
+        mapY.add(taxiA4_ypts);
+
+        int[] taxiA5_xpts = {348, 348, 355, 355};
+        int[] taxiA5_ypts = {120, 113, 113, 120};
+        mapX.add(taxiA5_xpts);
+        mapY.add(taxiA5_ypts);
+
+        int[] taxiA6_xpts = {456, 457, 454, 459, 467};
+        int[] taxiA6_ypts = {124, 127, 135, 135, 124};
+        mapX.add(taxiA6_xpts);
+        mapY.add(taxiA6_ypts);
+
+        int[] taxiA7_xpts = {435, 437, 437, 443, 451};
+        int[] taxiA7_ypts = {120, 117, 111, 111, 120};
+        mapX.add(taxiA7_xpts);
+        mapY.add(taxiA7_ypts);
+
+        int[] taxiA11_xpts = {489, 493, 499, 495};
+        int[] taxiA11_ypts = {111, 94, 94, 111};
+        mapX.add(taxiA11_xpts);
+        mapY.add(taxiA11_ypts);
+
+        int[] taxiA13_xpts = {504, 506, 512, 510};
+        int[] taxiA13_ypts = {111, 94, 94, 111};
+        mapX.add(taxiA13_xpts);
+        mapY.add(taxiA13_ypts);
+
+        int[] taxiC_xpts = {377, 377, 382, 382};
+        int[] taxiC_ypts = {216, 124, 124, 216};
+        mapX.add(taxiC_xpts);
+        mapY.add(taxiC_ypts);
+
+        int[] taxiG_xpts = {398, 398, 408, 408, 403, 403, 398, 398, 405, 405};
+        int[] taxiG_ypts = {242, 256, 243, 208, 208, 223, 224, 237, 237, 240};
+        mapX.add(taxiG_xpts);
+        mapY.add(taxiG_ypts);

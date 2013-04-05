@@ -1,0 +1,32 @@
+name : PDK
+size : 337,491
+
+rway : twoR ; Runway twoR ; 128,473 ; 137,476 ; 298,46 ; 290,43 ; 
+rway : twoL ; Runway twoL ; 90,462 ; 102,467 ; 202,199 ; 190,194 ; 
+rway : six ; Runway six ; 57,338 ; 56,327 ; 313,311 ; 315,321 ; 
+rway : sixteen ; Runway sixteen ; 92,85 ; 103,80 ; 220,360 ; 209,364 ; 
+
+tway : LtoR bridge ; Taxiway LtoR bridge ; 102,467 ; 105,459 ; 132,468 ; 127,473 ; 
+tway : taxiAto2L ; Taxiway taxiAto2L ; 89,462 ; 82,458 ; 85,449 ; 93,453 ; 
+tway : taxiA ; Taxiway taxiA ; 82,458 ; 77,457 ; 237,26 ; 243,28 ; 
+tway : taxiF ; Taxiway taxiF ; 130,395 ; 132,388 ; 156,397 ; 154,403 ; 
+tway : taxiJ ; Taxiway taxiJ ; 213,104 ; 217,96 ; 263,113 ; 260,120 ; 
+tway : taxiG ; Taxiway taxiG ; 203,199 ; 200,203 ; 225,213 ; 227,209 ; 
+tway : taxiAto2R ; Taxiway taxiAto2R ; 243,28 ; 240,34 ; 287,50 ; 289,43 ; 
+tway : taxiBtoD lower ; Taxiway taxiBtoD lower ; 203,368 ; 202,364 ; 227,354 ; 228,358 ; 
+tway : taxiD ; Taxiway taxiD ; 228,358 ; 230,355 ; 123,98 ; 120,100 ; 
+tway : taxiD upper ; Taxiway taxiD upper ; 123,98 ; 113,104 ; 95,59 ; 104,54 ; 
+tway : taxiB ; Taxiway taxiB ; 205,368 ; 198,370 ; 83,90 ; 92,86 ; 94,90 ; 89,92 ; 
+tway : taxiDtoBbridge ; Taxiway taxiDtoBbridge ; 143,156 ; 146,162 ; 121,169 ; 118,164 ; 
+tway : taxiC ; Taxiway taxiC ; 17,317 ; 311,301 ; 314,311 ; 310,310 ; 307,305 ; 135,315 ; 135,322 ; 129,322 ; 129,316 ; 116,316 ; 116,323 ; 109,324 ; 108,317 ; 61,320 ; 60,327 ; 56,327 ; 55,320 ; 17,323 ; 
+tway : taxiH ; Taxiway taxiH ; 189,155 ; 187,162 ; 176,158 ; 154,158 ; 148,160 ; 147,154 ; 151,152 ; 178,152 ; 
+tway : taxiE ; Taxiway taxiE ; 155,203 ; 160,198 ; 167,193 ; 172,190 ; 190,194 ; 188,198 ; 179,195 ; 168,198 ; 156,207 ; 
+
+ramp : northRamp ; Ramp northRamp ; 112,47 ; 154,47 ; 154,124 ; 146,125 ; 146,129 ; 161,128 ; 161,151 ; 150,153 ; 136,122 ; 133,123 ; 132,118 ; 134,116 ; 112,62 ; 
+ramp : northEastRamp ; Ramp northEastRamp ; 171,47 ; 201,47 ; 201,57 ; 214,57 ; 201,92 ; 211,96 ; 209,101 ; 199,97 ; 178,152 ; 161,151 ; 161,129 ; 178,129 ; 187,102 ; 171,102 ; 
+ramp : northWestRamp ; Ramp northWestRamp ; 76,84 ; 83,101 ; 87,99 ; 136,218 ; 98,234 ; 83,201 ; 89,197 ; 80,169 ; 68,169 ; 68,109 ; 76,104 ; 69,87 ; 
+ramp : westRamp ; Ramp westRamp ; 133,270 ; 87,291 ; 85,290 ; 75,290 ; 75,260 ; 14,261 ; 14,318 ; 131,311 ; 143,283 ; 
+ramp : t lk ; Ramp t lk ; 87,209 ; 68,216 ; 70,220 ; 89,214 ; 
+ramp : clairmontRamp ; Ramp clairmontRamp ; 65,217 ; 69,217 ; 69,237 ; 64,237 ; 64,249 ; 57,249 ; 57,223 ; 24,223 ; 24,238 ; 10,238 ; 10,195 ; 21,195 ; 21,208 ; 46,208 ; 46,195 ; 62,195 ; 62,202 ; 65,202 ; 
+
+bldg : controlTower ; Building controlTower ; 147,236 ; 154,236 ; 158,243 ; 154,249 ; 

@@ -1,0 +1,11 @@
+(defsystem "vitalisp"
+    :depends-on (:iterate)
+    :components ((:file "package")
+		 (:file "utility")
+		 (:file "read")
+		 (:file "ast")
+		 (:file "bytecode")
+		 (:file "environment")
+		 (:file "compile")
+		 (:file "encode"))
+    :serial t)

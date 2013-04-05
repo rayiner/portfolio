@@ -1,0 +1,27 @@
+graph INTG {
+I [color=VIOLET,style=filled];
+A [color=GREEN,style=filled];
+B [color=YELLOW,style=filled];
+C [color=ORANGERED,style=filled];
+D [color=INDIANRED,style=filled];
+Y [color=INDIANRED,style=filled];
+Z [color=INDIANRED,style=filled];
+ONE [color=INDIANRED,style=filled];
+HUNDRED [color=INDIANRED,style=filled];
+I -- A;
+I -- B;
+I -- C;
+I -- D;
+I -- Y;
+I -- Z;
+I -- ONE;
+I -- HUNDRED;
+A -- B;
+A -- C;
+A -- D;
+A -- Z;
+B -- C;
+B -- D;
+B -- Z;
+C -- D;
+ }

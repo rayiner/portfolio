@@ -1,0 +1,8 @@
+digraph CFG {
+L1 [shape=box,fontsize=10,label="L1\nt = ldi #<HALF-CONSTANT {1241FF59}> \nx = ldi #<HALF-CONSTANT {12420529}> \n"];
+L1 -> L2;
+L2 [shape=box,fontsize=10,label="L2\ny = cp #<HALF-TEMPORARY {1241EA51}> \nx = add #<HALF-TEMPORARY {1241EA51}> #<HALF-TEMPORARY {1241F661}> \nt != t : L3 L2 \n"];
+L2 -> L3;
+L2 -> L2;
+L3 [shape=box,fontsize=10,label="L3\nret #<HALF-TEMPORARY {1241F059}> \n"];
+ }

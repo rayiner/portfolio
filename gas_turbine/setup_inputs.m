@@ -1,0 +1,15 @@
+function [iv] = setup_inputs(ta, pa, M, prc, prf, beta, b, f, fib, fab, en)
+    iv.ta = ta;
+    iv.pa = pa;
+    iv.M = M;
+    iv.prf = prf;
+    iv.prc = prc;
+    iv.beta = beta;
+    iv.b = b;
+    iv.f = f;
+    iv.fib = fib;
+    iv.fab = fab;
+    iv.fanEnable = en(1);
+    iv.ibEnable = en(2);
+    iv.abEnable = en(3);
+    iv.mixEnable = en(4);

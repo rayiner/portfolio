@@ -1,0 +1,16 @@
+package edu.gatech.ccbs;
+
+import javax.swing.*;
+
+public class PilotFrame {
+	String aircraftName;
+	JTextArea clearanceArea;
+	
+	public PilotFrame(String aircraftName) {
+		this.aircraftName = aircraftName;
+	}
+
+	public void appendClearance(String clearance) {
+		
+	}
+}

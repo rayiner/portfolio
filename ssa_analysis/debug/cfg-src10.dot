@@ -1,0 +1,13 @@
+digraph CFG {
+L3 [shape=box,fontsize=10,label="L3\na = ldi #<HALF-CONSTANT {1240B229}> \nx3 = ldi #<HALF-CONSTANT {1240B7F9}> \nx1 = ldi #<HALF-CONSTANT {1240BDC9}> \na != a : L0 L4 \n"];
+L3 -> L0;
+L3 -> L4;
+L4 [shape=box,fontsize=10,label="L4\nx2 = ldi #<HALF-CONSTANT {1240C609}> \na != a : L1 L2 \n"];
+L4 -> L1;
+L4 -> L2;
+L1 [shape=box,fontsize=10,label="L1\n"];
+L1 -> L0;
+L2 [shape=box,fontsize=10,label="L2\n"];
+L2 -> L0;
+L0 [shape=box,fontsize=10,label="L0\nx0 = phi #<HALF-TEMPORARY {1240A319}> #<HALF-TEMPORARY {12409709}> #<HALF-TEMPORARY {12409D11}> \nret \n"];
+ }

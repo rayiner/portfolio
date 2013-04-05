@@ -1,0 +1,60 @@
+; test-compile.vl
+; Tests for the bytecode compiler
+
+(fun test1 () 1)
+
+(fun test2 (x) x)
+
+(fun test3 (x) (+ x 1))
+
+(fun test4 (x) (do (foo x) x))
+
+(fun test5 (x) (test5 x))
+
+(fun test6 () \(.x (+ x 1)))
+
+(fun test7 (x) \(.y (+ x y)))
+
+(fun test9 (x) \(.y \(.z (+ x (+ y z)))))
+
+(fun test10 (n) (if (> n 0) 1 -1))
+
+(fun test11 (n) (if (> n 0) 1))
+
+(fun test12 (n) (+ (if (> n 0) 1 -1) n))
+
+(fun test13 (n) (do (if (> n 0) 1) 3))
+
+(fun test14 () (bind ((var x 0)) (+ x 1)))
+
+(fun test15 (n) (bind ((var x n)) (+ x n)))
+
+(fun test16 (n) (bind ((var x n) (var y x)) (+ x y)))
+
+(fun test17 (x) (bind-par ((var x 1) (var y x)) (+ x y)))
+
+(fun test18 (n)
+  (bind ((fun fib (n)
+	   (if (< n 2)
+	       n
+	       (+ (fib (- n 1)) (fib (- n 2))))))
+    (fib n)))
+
+(fun test19 (n)
+  (bind ((fun sum-loop (count sum)
+	   (if (= count 0)
+	       sum
+	       (sum-loop count.-- sum.++))))
+    (sum-loop n 0)))
+
+(fun test20 (n)
+  (bind ((fun sum-loop (count)
+	   (if (= count n)
+	       count
+	       (sum-loop count.++))))
+    (sum-loop 0)))
+
+(fun test21 (n)
+  (if (< n 2)
+      n
+      (+ (fib (- n 1)) (fib (- n 2)))))

@@ -1,0 +1,21 @@
+Lessons Learned (aka Mistakes I Need to Avoid Making Again)
+
+A list of some lessons learned during the early development of the compiler:
+
+1) Organizing the IR as a graph of CLOS objects is a win. Being able to
+   dispatch on object types is nice.
+
+2) Trying to streamline the IR by holding analysis results in external tables
+   is a loss. Too much time is spent doing table lookups, and they obscure
+   the rest of the code too much. Stuffing analysis results into the flow-*
+   structures isn't super-clean, but it's easy to deal with.
+
+3) The DFA solver used to be a complicated macro-based thing. The current
+   mechanism using callbacks is much clearer both in the solver and in
+   each of the analyses. It's probably a bit slower, though.
+
+4) The universe abstraction is a win, even if its a bit slower than it 
+   would be to stick block indices directly in each node.
+
+5) Doing analysis on-demand and caching the results makes things faster and
+   also makes the code clearer. We should do the same for transformations.

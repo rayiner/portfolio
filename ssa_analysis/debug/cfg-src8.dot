@@ -1,0 +1,22 @@
+digraph CFG {
+A [shape=box,fontsize=10,label="A\none = ldi 1 \ntwo = ldi 2 \none != two : B C \n"];
+A -> B;
+A -> C;
+B [shape=box,fontsize=10,label="B\nr1 = add one two \n"];
+B -> D;
+C [shape=box,fontsize=10,label="C\nr2 = add one two \n"];
+C -> D;
+D [shape=box,fontsize=10,label="D\nr3 = phi r1 r2 \nr0 = add one two \nt = add r0 one \none != two : F E \n"];
+D -> F;
+D -> E;
+E [shape=box,fontsize=10,label="E\nx1 = phi r3 x2 \nt2 = add r0 one \none != two : H G \n"];
+E -> H;
+E -> G;
+F [shape=box,fontsize=10,label="F\nr4 = add one two \nt3 = add r3 one \nt4 = add r4 one \n"];
+F -> H;
+G [shape=box,fontsize=10,label="G\nx2 = add one two \n"];
+G -> H;
+H [shape=box,fontsize=10,label="H\nt5 = add r3 one \n"];
+H -> I;
+I [shape=box,fontsize=10,label="I\nt6 = add r3 one \nret \n"];
+ }

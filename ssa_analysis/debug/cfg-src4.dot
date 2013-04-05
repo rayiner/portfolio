@@ -1,0 +1,8 @@
+digraph CFG {
+B1 [shape=box,fontsize=10,label="B1\na0 = ldi #<HALF-CONSTANT {123BCE59}> \nmax = ldi #<HALF-CONSTANT {123BD429}> \none = ldi #<HALF-CONSTANT {123BD9F9}> \n"];
+B1 -> B2;
+B2 [shape=box,fontsize=10,label="B2\na1 = phi #<HALF-TEMPORARY {123BA739}> #<HALF-TEMPORARY {123BB349}> \na2 = add #<HALF-TEMPORARY {123BAD41}> #<HALF-TEMPORARY {123BC561}> \na2 > max : B3 B2 \n"];
+B2 -> B3;
+B2 -> B2;
+B3 [shape=box,fontsize=10,label="B3\na3 = phi #<HALF-TEMPORARY {123BB349}> #<HALF-TEMPORARY {123BA739}> \nret #<HALF-TEMPORARY {123BB951}> \n"];
+ }

@@ -1,0 +1,599 @@
+/*
+ CCBS mockup.
+ (C) CCBS team, 2007.
+ */
+package edu.gatech.ccbs;
+
+import java.awt.*;
+
+import javax.swing.*;
+import java.util.*;
+import java.awt.event.*;
+import java.awt.geom.Point2D;
+
+class MouseThunk extends MouseAdapter {
+	private ControllerFrame frame;
+	
+	public MouseThunk(ControllerFrame p) {
+		frame = p;
+	}
+	
+	public void mouseReleased(MouseEvent e) {
+		frame.clickEvent(e);
+	}
+}
+
+class KeyThunk extends KeyAdapter {
+	private ControllerFrame frame;
+	
+	public KeyThunk(ControllerFrame p) {
+		frame = p;
+	}
+	
+	public void keyTyped(KeyEvent e) {
+		frame.pressEvent(e);
+	}
+}
+
+/*
+ * Encapsulates a controller's window.
+ */
+public class ControllerFrame extends JFrame implements ActionListener {
+	private static final long serialVersionUID = 1L;
+	
+	MapModel   mapModel;
+	Controller controller;
+	
+	MapPanel mapPanel;
+	
+	JTextArea staticTextArea;
+	JTextArea lastClearanceArea;
+	JTextArea currentClearanceArea;
+	JPanel infoPanel;
+	JPanel commandPanel;
+	JPanel actionPanel;
+	
+	ArrayList buttons;
+	
+	PathModel currentPath;
+	ArrayList currentExpectation;
+	ArrayList disabledObjectTypes;
+	
+	boolean buildMode = false;
+	
+	private Model selectedModel;
+	private Point2D.Double selectedPoint;
+	
+	public void stateReset() {
+		disabledObjectTypes = new ArrayList();
+		mapPanel.highlightedObjects.clear();
+		controller.resetState();
+		clearCurrentPath();
+		stateSynchronize();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void stateSynchronize() {
+		currentExpectation = controller.getExpectedTypes();
+		Pattern.Variable var = controller.topValue();
+		if(var != null && var.type == Pattern.VariableType.Path) {
+			currentExpectation.add(Pattern.VariableType.Path);
+		}
+
+		if(!currentExpectation.contains(Pattern.VariableType.AircraftID)) {
+			disabledObjectTypes.add(Pattern.VariableType.AircraftID);
+		}
+		if(!currentExpectation.contains(Pattern.VariableType.Clearance)) {
+			toggleAllCommandButtons(false);
+		}
+		else {
+			toggleAllCommandButtons(true);
+		}
+		
+		if(controller.currentTemplate.values.size() > 0) {
+			toggleButtonEnabled("Cancel", true);
+			toggleButtonEnabled("Undo", true);
+		}
+		else {
+			toggleButtonEnabled("Cancel", false);
+			toggleButtonEnabled("Undo", false);
+		}
+		
+		if(controller.isInvokable()) {
+			toggleButtonEnabled("Issue_Clearance", true);
+		}
+		else {
+			toggleButtonEnabled("Issue_Clearance", false);
+		}
+		
+		updateCurrentClearanceText();
+	}
+	
+	private void updateCurrentClearanceText() {
+		currentClearanceArea.setText("");
+		ArrayList list = controller.currentValuesText();
+		Iterator itr = list.iterator();
+		while(itr.hasNext()) {
+			String str = (String)itr.next();
+			currentClearanceArea.append(str);
+			currentClearanceArea.append("\n");
+		}
+	}
+	
+	public void statePop() {
+		Pattern.Variable var = stateLastVariable();
+		if(var != null) {
+			mapPanel.highlightedObjects.remove(var.value);
+			
+			if(var.type == Pattern.VariableType.Path)
+				clearCurrentPath();
+		}
+		controller.popValue();
+		stateSynchronize();
+	}
+	
+	public Pattern.Variable stateLastVariable() {
+		return controller.topValue();
+	}
+	
+	public Pattern.Variable stateLastVariableOfType(Pattern.VariableType type) {
+		return controller.lastValueByName(type);
+	}
+	
+	public boolean maybeAdvanceState(Pattern.VariableType type, Object value) {
+		if(!currentExpectation.contains(type)) {
+			return false;
+		}
+		
+		controller.advanceState(type, value);
+		
+		stateSynchronize();
+		printExpectation();
+		System.out.println("");
+		
+		return true;
+	}
+	
+	public void stateReverseVariable() {
+		controller.popValue();
+	}
+	
+	public void printExpectation() {
+		System.out.println("Expectation -> ");
+		Iterator temp = currentExpectation.iterator();
+		while(temp.hasNext()) {
+			System.out.print(temp.next());
+			System.out.print(" ");
+		}
+	}
+	
+	public boolean maybeInvokeState() {
+		if(!controller.isInvokable()) {
+			return false;
+		}
+		
+		controller.invokeState();
+		stateReset();
+		return true;
+	}
+
+	public void actionPerformed(ActionEvent arg) {
+		JButton button = (JButton)arg.getSource();
+		String cmd = button.getName();
+		System.out.println(cmd);
+		
+		if(cmd.equals("Issue_Clearance")) {
+			maybeInvokeState();
+		}
+		else if(cmd.equals("Cancel")) {
+			stateReset();
+		}
+		else if(cmd.equals("Undo")) {
+			statePop();
+		}
+		else {
+			maybeAdvanceState(Pattern.VariableType.Clearance, cmd);
+		}
+		
+		mapPanel.repaint();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void clickEvent(MouseEvent e) {
+		Point2D.Double pt = translatePoint(e.getPoint());
+		
+		if(e.getClickCount() > 1) {
+			System.out.println(pt);
+			return;
+		}
+		
+		if(buildMode) {
+			Model m = mapModel.lookupModelByLocation(pt);
+			
+			if(m != null) {
+				System.out.println("Selected model ->");
+				m.printModel();
+			}
+			else
+				System.out.println("Unselected");
+			
+			if(selectedModel != null && m != null) {
+				mapModel.makeIntersection(selectedModel, m, selectedPoint, pt);
+				selectedModel = null;
+				selectedPoint = null;
+			}
+			else {
+				selectedModel = m;
+				selectedPoint = pt;
+			}
+		}
+		else {	
+			Pattern.VariableType type = null;
+			Object value = null;
+			
+			// paths take precedence
+			if(currentExpectation.contains(Pattern.VariableType.Path)) {
+				Pattern.Variable var = 
+					stateLastVariableOfType(Pattern.VariableType.AircraftID);
+				
+				if(var != null && currentPath.intersections.isEmpty()) {
+					AircraftModel am = (AircraftModel)var.value;
+					Intersection ais = mapModel.lookupIntersectionForAirplane(am);
+					extendCurrentPathToIntersection(ais, am.location);
+				}
+				
+				Intersection is = lookupClickIntersection(pt);
+				extendCurrentPathToIntersection(is, pt);
+				
+				var = stateLastVariable();
+				if(var.type == Pattern.VariableType.Path) {
+					stateReverseVariable();
+				}
+				
+				type = Pattern.VariableType.Path;
+				value = currentPath;
+			}
+			else if(currentExpectation.contains(Pattern.VariableType.WaypointID)) {
+				Intersection is = lookupClickIntersection(pt);
+				type = Pattern.VariableType.WaypointID;
+				value = is;
+			}
+			else {
+				Model m = mapModel.lookupModelByLocation(pt);
+			
+				if(m != null) {
+					if(m instanceof AircraftModel) {
+						type = Pattern.VariableType.AircraftID;
+						value = m;
+					}
+					if(m instanceof RampModel) {
+						type = Pattern.VariableType.RampID;
+						value = m;
+					}
+					else if(m instanceof RunwayModel) {
+						type = Pattern.VariableType.RunwayID;
+						value = m;
+					}
+					else if(m instanceof TaxiwayModel) {
+						type = Pattern.VariableType.TaxiwayID;
+						value = m;
+					}
+				}
+			}
+			
+			if(type != null && value != null 
+					&& currentExpectation.contains(type)) {
+				System.out.println(type);
+				System.out.println(value);
+				mapPanel.highlightedObjects.add(value);
+				maybeAdvanceState(type, value);
+			}
+		}
+	
+		mapPanel.repaint();
+	}
+	
+	public void pressEvent(KeyEvent e) {
+		char chr = e.getKeyChar();
+		
+		if(chr == 'r')
+			mapPanel.showRunways = !mapPanel.showRunways;
+		else if(chr == 't')
+			mapPanel.showTaxiways = !mapPanel.showTaxiways;
+		else if(chr == 'a')
+			mapPanel.showRamps = !mapPanel.showRamps;
+		else if(chr == 'b')
+			mapPanel.showBuildings = !mapPanel.showBuildings;
+		else if(chr == 'p')
+			mapPanel.showPoints = !mapPanel.showPoints;
+		else if(chr == 'j')
+			mapPanel.showAircraft = !mapPanel.showAircraft;
+		else if(chr == 'i') {
+			buildMode = !buildMode;
+			System.out.print("Build mode ");
+			System.out.println(buildMode);
+		}
+		else if(chr == 'd')
+			mapModel.saveIntersections();
+		
+		mapPanel.repaint();
+	}
+	
+	public ShortestPath filterRedundantWaypoints(ShortestPath sp) {
+		if(sp.path.contains(null)) {
+			System.out.println("Null waypoints!");
+		}
+		return sp;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public boolean checkForDuplicates(PathModel sp) {
+		HashSet s = new HashSet(sp.intersections);
+		if(s.size() != sp.intersections.size()) {
+			return true;
+		}
+		
+		return false;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void extendToPoint(Intersection is, Point2D.Double pt) {
+		while(currentPath.realEndpoints.size() > 1) {
+			int nlast = currentPath.realEndpoints.size() - 1;
+			currentPath.realEndpoints.remove(nlast);
+		}
+		
+		currentPath.realEndpoints.add(pt);
+		currentPath.intersections.add(is);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void extendCurrentPathToIntersection(Intersection is, Point2D.Double pt) {
+		if(is == null) {
+			System.out.println("Extending to null path!");
+			return;
+		}
+		if(currentPath.intersections.size() == 0) {
+			extendToPoint(is, pt);
+			return;
+		}
+		
+		int lastIdx = currentPath.intersections.size() - 1;
+		Intersection last = (Intersection)currentPath.intersections.get(lastIdx);
+		
+		if(last == is)
+			return;
+		
+		if(mapModel.neighborCost(last, is) > 0) {
+			extendToPoint(is, pt);
+			return;
+		}
+		
+		if(last == null || is == null) {
+			System.out.println("Null endpoints");
+		}
+		
+		ShortestPath sp = mapModel.computeShortestPath(last, is);
+		sp = filterRedundantWaypoints(sp);
+		
+		if(sp == null) {
+			System.out.println("Attempt to extend to disjoint region!");
+			return;
+		}
+		
+		for(int i = 0; i < sp.path.size(); ++i) {
+			Intersection nis = (Intersection)sp.path.get(i);
+			
+			if(nis != last) {
+				extendToPoint(nis, pt);
+			}
+		}
+		
+		if(checkForDuplicates(currentPath)) {
+			System.out.println("Duplicates in path");
+		}
+	}
+	
+	private Intersection lookupClickIntersection(Point2D.Double pt) {
+		Intersection is = mapModel.lookupIntersectionByLocation(pt);
+		if(is == null) {
+			Model m = mapModel.lookupModelByLocation(pt);
+
+			if(m != null && m instanceof ShapeModel) {
+				ArrayList isects = mapModel.lookupIntersectionsInShape((ShapeModel)m);
+				Intersection closestIs = null;
+				double closestDistance = Double.MAX_VALUE;
+				for(int i = 0; i < isects.size(); ++i) {
+					Intersection tis = (Intersection)isects.get(i);
+					if(tis.point.distance(pt) < closestDistance) {
+						closestIs = tis;
+						closestDistance = tis.point.distance(pt);
+					}
+				}
+
+				if(closestIs != null)
+					return closestIs;
+			}
+			
+			return null;
+		}
+		
+		return is;
+	}
+	
+	private void clearCurrentPath() {
+		currentPath.intersections.clear();
+		currentPath.realEndpoints.clear();
+	}
+	
+	private Point2D.Double translatePoint(Point pt) {
+		double hscale = mapModel.mapWidth / mapPanel.getWidth();
+		double vscale = mapModel.mapHeight / mapPanel.getHeight();
+		return new Point2D.Double(hscale * pt.x, vscale * pt.y);
+	}
+	
+	private String mangleName(String text) {
+		return text.replace(' ', '_');
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void addCommandButton(String text) {
+		String name = mangleName(text);
+		JButton button = new JButton(text);
+		button.setName(name);
+		button.setBackground(Main.backgroundColor);
+		button.setForeground(Color.white);
+		buttons.add(button);
+		commandPanel.add(button);
+		button.addActionListener(this);
+	}
+	
+	public void addCommandLabel(String text) {
+		JLabel label = new JLabel(text);
+		label.setForeground(Color.WHITE);
+		commandPanel.add(label);
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void addActionButton(String text) {
+		String name = mangleName(text);
+		JButton button = new JButton(text);
+		button.setName(name);
+		button.setBackground(Main.backgroundColor);
+		button.setForeground(Color.white);
+		buttons.add(button);
+		actionPanel.add(button);
+		button.addActionListener(this);
+	}
+	
+	public void addActionLabel(String text) {
+		JLabel label = new JLabel(text);
+		label.setForeground(Color.WHITE);
+		actionPanel.add(label);
+	}
+	
+	public void toggleButtonEnabled(String name, boolean enable) {
+		Iterator itr = buttons.iterator();
+		while(itr.hasNext()) {
+			JButton button = (JButton)itr.next();
+			if(button.getName().equals(name)) {
+				button.setEnabled(enable);
+			}
+		}
+	}
+	
+	public void toggleAllButtonsEnabled(boolean enable) {
+		Iterator itr = buttons.iterator();
+		while(itr.hasNext()) {
+			JButton button = (JButton)itr.next();
+			button.setEnabled(enable);
+		}
+	}
+	
+	public void toggleAllCommandButtons(boolean enable) {
+		Iterator itr = buttons.iterator();
+		while(itr.hasNext()) {
+			JButton button = (JButton)itr.next();
+			if(!button.getName().endsWith("_Command")) {
+				button.setEnabled(enable);
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	public ControllerFrame(MapModel model, Controller cont) {
+		super("CCBS Controller Window");
+		
+		currentPath = new PathModel();
+		currentPath.name = "current-path";
+		currentPath.desc = "The current path";
+		model.children.add(currentPath);
+		
+		mapModel = model;
+		controller = cont;
+		
+		buttons = new ArrayList();
+		
+		mapPanel = new MapPanel(model);
+		mapPanel.addMouseListener(new MouseThunk(this));
+		mapPanel.addKeyListener(new KeyThunk(this));
+		
+		commandPanel = new JPanel();
+		commandPanel.setBackground(Main.backgroundColor);
+		commandPanel.setLayout(new BoxLayout(commandPanel, BoxLayout.Y_AXIS));
+		addCommandLabel("Commands");
+		commandPanel.add(Box.createVerticalStrut(8));
+		addCommandButton("Taxi to Ramp");
+		addCommandButton("Taxi to Taxiway");
+		addCommandButton("Taxi to Runway");
+		addCommandButton("Hold Short of");
+		addCommandButton("Clear to Cross");
+		addCommandButton("Clear for Takeoff");
+		addCommandButton("Contact Ground");
+		commandPanel.add(Box.createVerticalStrut(32));
+		addCommandLabel("Modifiers");
+		commandPanel.add(Box.createVerticalStrut(8));
+		addCommandButton("Immediately");
+		addCommandButton("When Able");
+		addCommandButton("Cancel Takeoff");
+		addCommandButton("Hold");
+		addCommandButton("Expect Startup");
+		addCommandButton("Request Pushback");
+
+		actionPanel = new JPanel();
+		actionPanel.setBackground(Main.backgroundColor);
+		actionPanel.setLayout(new BoxLayout(actionPanel, BoxLayout.X_AXIS));
+		addActionLabel("Actions");
+		actionPanel.add(Box.createHorizontalStrut(8));
+		addActionButton("Issue Clearance");
+		addActionButton("Cancel");
+		addActionButton("Undo");
+		actionPanel.add(Box.createGlue());
+		
+		infoPanel = new JPanel();
+		infoPanel.setBackground(Main.backgroundColor);
+		infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
+		staticTextArea = new JTextArea();
+		staticTextArea.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		staticTextArea.setEditable(false);
+		staticTextArea.setBackground(Main.backgroundColor);
+		staticTextArea.setForeground(Color.white);
+		staticTextArea.append("CCBS TowerVision Information Area\n");
+		staticTextArea.append("April 19, 2007: 15:20\n");
+		staticTextArea.append("\nWind: 50 mi/h SW\n");
+		infoPanel.add(staticTextArea);
+		infoPanel.add(Box.createVerticalStrut(32));
+		lastClearanceArea = new JTextArea();
+		lastClearanceArea.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		lastClearanceArea.setEditable(false);
+		lastClearanceArea.setBackground(Main.backgroundColor);
+		lastClearanceArea.setForeground(Color.white);
+		lastClearanceArea.setText("No clearances issued");
+		infoPanel.add(lastClearanceArea);
+		currentClearanceArea = new JTextArea();
+		currentClearanceArea.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
+		currentClearanceArea.setEditable(false);
+		currentClearanceArea.setBackground(Main.backgroundColor);
+		currentClearanceArea.setForeground(Color.white);
+		currentClearanceArea.setText("No current clearance");
+		infoPanel.add(currentClearanceArea);
+
+		Container cp = getContentPane();
+		cp.setLayout(new BorderLayout());
+		cp.add(mapPanel, BorderLayout.CENTER);
+		cp.add(commandPanel, BorderLayout.EAST);
+		cp.add(actionPanel, BorderLayout.SOUTH);
+		cp.add(infoPanel, BorderLayout.WEST);
+		
+		Dimension cdim = commandPanel.getPreferredSize();
+		Dimension adim = actionPanel.getPreferredSize();
+		Dimension idim = infoPanel.getPreferredSize();
+		int width = (int)(model.mapWidth*1.5) + cdim.width + idim.width;
+		int height = (int)(model.mapHeight*1.5) + adim.height;
+		
+		setSize(width, height);
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		
+		stateReset();
+	}
+}

@@ -1,0 +1,31 @@
+\documentclass[12pt]{article}
+
+\usepackage{url}
+\usepackage{listings}
+
+\begin{document}
+
+\title{Verrazano Implementation Notes}
+\author{Rayiner Hashem}
+\date{\today}
+\maketitle
+
+\section{Introduction}
+
+\subsection{Intention}
+The intention of this paper is to serve as a high-level documentation of the Verrazano implementation. It is intended that this document be updated whenever the program's implementation is changed significantly.
+
+\section{Frontend}
+
+\subsection{Input File Parsing}
+Parsing of the input file happens in frontend/driver.lisp. This file represents the input file as a \emph{configuration} structure, which has fields containing the pertinent information from the input file. It then calls a series of functions that look for specific sections in the parsed input file and set the appropriate fields in the configuration structure. 
+
+\subsection{Running GCC-XML}
+GCC-XML is run from frontend/driver.lisp. Currently, the invocation mechanism is decidedly hackish. The driver reads the filled-in configuration structure, finds the C++ header files included in the binding, and generates a temporary C++ file that includes these headers. It then uses ASDF's shell call-out mechanism to invoke GCC-XML on the resulting file. While the generation of a temporary file is inevitable, as it is would not be desirable to modify GCC-XML to accept another form of input, the temporary file should be handled in a more elegant manner. Specifically, the driver should direct the output to a pipe, and start GCC-XML with its input redirected to this pipe. Similarly, GCC-XML's output should not be saved to a temporary file, but rather be redirected to a pipe that can be read by the driver.
+
+\subsection{Generating the IR}
+The IR is generated in frontend/parser.lisp, which is called from frontend/driver.lisp. The primary entry-point in parser.lisp is \emph{parse-gccxml-output}, which is called with the name of the GCC-XML output file. The control and data flow within the parser is simple. The IR is represented in the \emph{parser-state} structure, which contains a hash-table with GCC-XML nodes indexed by id, and a hash-table of corresponding IR nodes indexed by ID. After reading the GCC-XML file using S-XML, \emph{parse-gccxml-output} calls \emph{convert-xml-nodes}, which performs some initialization of the IR then iterates over each top-level XML node in the DOM and calls a handler function that generates the corresponding IR node and indexes it in the IR hash table. It then calls \emph{construct-graph}, which performs a final pass on the IR to connect all the edges between nodes. This pass necessary due to GCC-XML's lack of any ordering on its output file. Since a node in the XML document may occur before all of the nodes it refers to, when an edge is created in response to the processing of an XML node, its target may not yet exist in the IR. In order to bypass this problem, edges are created containing the ID of the target, which is resolved by \emph{construct-graph} when all the nodes have been created. 
+
+Most of the logic of parsing the XML graph is contained in the XML node handlers in  frontend/handlers.lisp, so it is worth describing this file in some detail. Generally, there is a handler function for each type of top-level node in the GCC-XML output. If this node has any child nodes in the GCC-XML output, the handler function is responsible for processing those child nodes. This mechanism suffices for parsing GCC-XML files, since few top-level node types can have children, and when they do, the child-node types are very well-defined and can appear only in the context of that parent node type. A few macros are used to ease construction of the IR graph. The primary such macro is \emph{with-new-node}, which constructs a new node, adds it to the IR node index, and assigns it to the named local variable. The macro \emph{with-new-edge} accomplishes the same thing for edges. A companion macro called \emph{with-edge-from-xml} serves the same purpose, except it derives the edge target from an attribute in the XML node. Slots or annotations in nodes or edges are set using two functions, \emph{set-note} and \emph{set-slot}. Two helper functions, \emph{slot-from-xml} and \emph{note-from-xml}, exist to set slots or annotations based on attributes in the XML node.
+
+\end{document}

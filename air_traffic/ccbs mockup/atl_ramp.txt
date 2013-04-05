@@ -1,0 +1,104 @@
+int[] southCargoRamp_xpts = {301, 344, 344, 338, 338, 289, 289, 301};
+int[] southCargoRamp_ypts = {451, 451, 467, 467, 515, 515, 465, 465};
+mapX.add(southCargoRamp_xpts);
+mapY.add(southCargoRamp_ypts);
+
+int[] ramp1S_xpts = {140, 140, 152, 152};
+   int[] ramp1S_ypts = {342, 332, 332, 342};
+   mapX.add(ramp1S_xpts);
+   mapY.add(ramp1S_ypts);
+   
+   int[] ramp2S_xpts = {184, 184, 196, 196};
+   int[] ramp2S_ypts = {342, 332, 332, 342};
+   mapX.add(ramp2S_xpts);
+   mapY.add(ramp2S_ypts);
+   
+   int[] ramp3S_xpts = {226, 226, 238, 238};
+   int[] ramp3S_ypts = {342, 332, 332, 342};
+   mapX.add(ramp3S_xpts);
+   mapY.add(ramp3S_ypts);
+   
+   int[] ramp4S_xpts = {273, 273, 285, 285};
+   int[] ramp4S_ypts = {342, 332, 332, 342};
+   mapX.add(ramp4S_xpts);
+   mapY.add(ramp4S_ypts);
+   
+   int[] ramp5S_xpts = {312, 314, 334, 332};
+   int[] ramp5S_ypts = {342, 332, 332, 342};
+   mapX.add(ramp5S_xpts);
+   mapY.add(ramp5S_ypts);
+   
+   int[] ramp6S_xpts = {393, 352, 352, 393};
+   int[] ramp6S_ypts = {336, 336, 323, 323};
+   mapX.add(ramp6S_xpts);
+   mapY.add(ramp6S_ypts);
+   
+   int[] ramp1_xpts = {130, 130, 165, 165};
+   int[] ramp1_ypts = {332, 232, 232, 332};
+   mapX.add(ramp1_xpts);
+   mapY.add(ramp1_ypts);
+   
+   int[] ramp2_xpts = {169, 169, 209, 209};
+   int[] ramp2_ypts = {332, 232, 232, 332};
+   mapX.add(ramp2_xpts);
+   mapY.add(ramp2_ypts);
+   
+   int[] ramp3_xpts = {214, 214, 255, 255};
+   int[] ramp3_ypts = {332, 232, 232, 332};
+   mapX.add(ramp3_xpts);
+   mapY.add(ramp3_ypts);
+   
+   int[] ramp4_xpts = {259, 259, 300, 300};
+   int[] ramp4_ypts = {332, 232, 232, 332};
+   mapX.add(ramp4_xpts);
+   mapY.add(ramp4_ypts);
+   
+   int[] ramp5_xpts = {303, 303, 346, 346};
+   int[] ramp5_ypts = {332, 232, 232, 332};
+   mapX.add(ramp5_xpts);
+   mapY.add(ramp5_ypts);
+
+   int[] ramp6E_xpts = {352, 352, 356, 357, 366, 366, 387, 387};
+   int[] ramp6E_ypts = {323, 292, 292, 282, 282, 280, 280, 323};
+   mapX.add(ramp6E_xpts);
+   mapY.add(ramp6E_ypts);
+
+   int[] ramp6_xpts = {387, 367, 367, 357, 357, 352, 352, 387};
+   int[] ramp6_ypts = {277, 277, 275, 275, 264, 264, 234, 234};
+   mapX.add(ramp6_xpts);
+   mapY.add(ramp6_ypts);
+
+   int[] ramp1N_xpts = {165, 130, 130, 153, 156, 165};
+    int[] ramp1N_ypts = {232, 232, 224, 224, 230, 230 };
+    mapX.add(ramp1N_xpts);
+    mapY.add(ramp1N_ypts);
+    
+    int[] ramp2N_xpts = {169, 169, 180, 180, 198, 198, 209, 209};
+    int[] ramp2N_ypts = {232, 228, 228, 220, 220, 229, 229, 232};
+    mapX.add(ramp2N_xpts);
+    mapY.add(ramp2N_ypts);
+    
+    int[] ramp3N_xpts = {216, 216, 226, 226, 240, 240, 255, 255};
+    int[] ramp3N_ypts = {232, 229, 229, 219, 219, 229, 229, 232};
+    mapX.add(ramp3N_xpts);
+    mapY.add(ramp3N_ypts);
+    
+    int[] ramp4N_xpts = {259, 259, 270, 270, 285, 285, 300, 300};
+    int[] ramp4N_ypts = {232, 229, 229, 219, 219, 229, 229, 232};
+    mapX.add(ramp4N_xpts);
+    mapY.add(ramp4N_ypts);
+    
+    int[] ramp5N_xpts = {303, 303, 316, 316, 334, 334, 347, 347};
+    int[] ramp5N_ypts = {232, 229, 229, 219, 219, 229, 229, 232};
+    mapX.add(ramp5N_xpts);
+    mapY.add(ramp5N_ypts);
+
+    int[] randomRamp_xpts = {330, 330, 338, 341, 346, 352, 372, 379, 411, 411, 400, 400};
+    int[] ramdomRamp_ypts = {113, 104, 104, 95, 93, 84, 84, 90, 91, 108, 108, 112};
+    mapX.add(randomRamp_xpts);
+    mapY.add(ramdomRamp_ypts);
+    
+    int[] nCargoRamp_xpts = {421, 419, 438, 437, 447, 548, 546, 506, 501, 498, 493, 493, 476, 460, 453, 441, 441, 444};
+    int[] nCargoRamp_ypts = {111, 95, 58, 41, 29, 93, 96, 96, 94, 96, 95, 85, 69, 69, 75, 95, 106, 111};
+    mapX.add(nCargoRamp_xpts);
+    mapY.add(nCargoRamp_ypts);

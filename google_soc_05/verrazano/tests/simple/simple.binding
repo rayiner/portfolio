@@ -1,0 +1,7 @@
+(defbinding "simple-library"
+	    (nicknames "simple")
+	    (flags "-Itestsuite/simple")
+	    (include "test-simple.h")
+	    (export "don't care")
+	    (override "not supported yet"))
+

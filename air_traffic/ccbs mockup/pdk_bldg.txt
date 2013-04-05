@@ -1,0 +1,5 @@
+        int[] controlTower_xpts = {147, 154, 158, 154};
+        int[] controlTower_ypts = {236, 236, 243, 249};
+       
+        mapX.add(controlTower_xpts);
+        mapY.add(controlTower_ypts);

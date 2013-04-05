@@ -1,0 +1,45 @@
+; test-reader.vl 
+; test the reader
+
+(fun test2 (tf result-fn)
+  (when tf
+    (tf-traverse tf %(map %(map result-fn ?.results) ?.derivations))))
+
+(fun test3 (a b)
+  (+ a.field1 b.field2))
+
+(fun test4 (a b)
+  (apply \b a))
+
+(fun test5 (a b)
+  a.b:b:a.b)
+
+(fun test6 ()
+  (a b).(b c))
+
+(fun test7 ()
+  (let (x:0 ; this is a comment
+	y:0)
+    (+ x y)))
+
+(fun test8 ()
+  "(foo bar baz)")
+
+(fun test9 ()
+  '(1 2 3 4 5))
+
+(fun test10 ()
+  |foobar bas "floo!" |)
+
+(fun test11 (x)
+  \(.y
+     (+ x y)))
+
+(fun test12 (x)
+  $(\(.y (+ x y)) x))
+
+(fun test13 (x) $x)
+
+(fun test14 (x) $(x 3))
+
+(fun test15 (x) $(\(.y (+ x y))))

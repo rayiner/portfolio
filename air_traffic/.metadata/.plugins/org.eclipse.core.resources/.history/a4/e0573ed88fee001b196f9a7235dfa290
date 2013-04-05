@@ -1,0 +1,65 @@
+package edu.gatech.ccbs;
+
+import java.util.*;
+
+public class Template {
+	public ArrayList values;
+	
+	public Template() {
+		values = new ArrayList();
+	}
+	
+	public void substituteVariables(Pattern pat) {
+		Iterator myItr = values.iterator();
+		Iterator itsItr = pat.match.variables.iterator();
+		
+		while(myItr.hasNext() && itsItr.hasNext()) {
+			Pattern.Variable myVar = (Pattern.Variable)myItr.next();
+			Pattern.Variable itsVar = (Pattern.Variable)itsItr.next();
+			myVar.name = itsVar.name;
+		}
+	}
+	
+	public Pattern.Variable lookupVariable(String name) {
+		Iterator itr = values.iterator();
+		
+		while(itr.hasNext()) {
+			Pattern.Variable var = (Pattern.Variable)itr.next();
+			
+			if(var.name.equals(name)) {
+				return var;
+			}
+		}
+		
+		return null;
+	}
+	
+	public void serializeTemplate(Pattern pat) {
+		Iterator itr = pat.convert.operands.iterator();
+		
+		System.out.println(pat.convert.commandName);
+		
+		while(itr.hasNext()) {
+			String name = (String)itr.next();
+			Pattern.Variable var = lookupVariable(name);
+			
+			if(var != null) {
+				if(var.type == Pattern.VariableType.Path) {
+					PathModel pm = (PathModel)var.value;
+					Iterator nitr = pm.intersections.iterator();
+					while(nitr.hasNext()) {
+						Intersection is = (Intersection)nitr.next();
+						System.out.println(is.index);
+					}
+				}
+				else if(var.type == Pattern.VariableType.WaypointID) {
+					Intersection is = (Intersection)var.value;
+				}
+			}
+			else {
+				System.out.print("Reference to unbound variable: ");
+				System.out.print(name);
+			}
+		}
+	}
+}

@@ -1,0 +1,9 @@
+testsuite/.*png$
+testsuite/.*jpg$
+testsuite/.*pdf$
+testsuite/.*-cffi-bindings.lisp$
+.*\.aux$
+.*\.log$
+.*\.pdf$
+.*\.so$
+^#

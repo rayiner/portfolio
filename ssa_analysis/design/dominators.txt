@@ -1,0 +1,17 @@
+Finding Dominators
+
+To construct SSA form, we need to compute the dominator tree of the CFG.
+Since we already have a generic data-flow solver, we use the iterative
+method to compute the dominator sets of nodes. Construction of the dominator
+tree from these dominance sets is simple. Note that the dominance set of a
+node in the dominator tree is the set of nodes on the path through the tree
+from the root to the node. The immediate dominator of the node shares the
+exact same path, except for the last node. Since the common prefix is a 
+path in a tree, it terminates uniquely on a single node. So, iff idom(b) = a,
+then, dom(a) = dom(b) - a. The equality allows an efficient algorithm for
+finding the unique immediate dominator of a node, by hashing from dominance
+sets to basic block structures.
+
+Once we have the dominator tree (implicitly, from the idom's), we use
+the simple algorithm given in Cooper & Torczon to compute the dominance
+frontier of each node. 

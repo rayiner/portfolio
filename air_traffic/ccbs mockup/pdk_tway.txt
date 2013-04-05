@@ -1,0 +1,91 @@
+        //taxiway between 2L and 2R at their ends
+        int[] LtoR_bridgex = {102, 105, 132, 127};
+        int[] LtoR_bridgey = {467, 459, 468, 473};
+        
+        mapX.add(LtoR_bridgex);
+        mapY.add(LtoR_bridgey);
+                       
+        // The connector between taxi_A and 2L
+        int[] taxiAto2L_x = {89, 82, 85, 93};
+        int[] taxiAto2L_y = {462, 458, 449, 453};
+        
+        mapX.add(taxiAto2L_x);
+        mapY.add(taxiAto2L_y);
+      
+        int[] taxiA_xpts = {82, 77, 237, 243};
+        int[] taxiA_ypts = {458, 457, 26, 28};
+         
+        mapX.add(taxiA_xpts);
+        mapY.add(taxiA_ypts);
+                
+        int[] taxiF_xpts = {130, 132, 156, 154};
+        int[] taxiF_ypts = {395, 388, 397, 403};
+        
+        mapX.add(taxiF_xpts);
+        mapY.add(taxiF_ypts);
+                               
+        int[] taxiJ_xpts = {213, 217, 263, 260};        
+        int[] taxiJ_ypts = {104, 96, 113, 120};
+         
+        mapX.add(taxiJ_xpts);
+        mapY.add(taxiJ_ypts);
+                       
+        int[] taxiG_xpts = {203, 200, 225, 227};
+        int[] taxiG_ypts = {199, 203, 213, 209};
+        
+        mapX.add(taxiG_xpts);
+        mapY.add(taxiG_ypts);
+                         
+        int[] taxiAto2R_x = {243, 240, 287, 289};      
+        int[] taxiAto2R_y = {28, 34, 50, 43};     
+        
+        mapX.add(taxiAto2R_x);
+        mapY.add(taxiAto2R_y);
+                           
+        int[] taxiBtoD_lower_xpts = {203, 202, 227, 228};
+        int[] taxiBtoD_lower_ypts = {368, 364, 354, 358};
+        
+        mapX.add(taxiBtoD_lower_xpts);
+        mapY.add(taxiBtoD_lower_ypts);
+                 
+        int[] taxiD_xpts = {228, 230, 123, 120};
+        int[] taxiD_ypts = {358, 355, 98, 100};
+         
+        mapX.add(taxiD_xpts);
+        mapY.add(taxiD_ypts);
+         
+        int[] taxiD_upper_x = {123, 113, 95, 104};
+        int[] taxiD_upper_y = {98, 104, 59, 54};
+         
+        mapX.add(taxiD_upper_x);
+        mapY.add(taxiD_upper_y);
+                 
+        int[] taxiB_xpts = {205, 198, 83, 92, 94, 89};
+        int[] taxiB_ypts = {368, 370, 90, 86, 90, 92};
+        
+        mapX.add(taxiB_xpts);
+        mapY.add(taxiB_ypts);
+        
+        int[] taxiDtoBbridge_xpts = {143, 146, 121, 118};
+        int[] taxiDtoBbridge_ypts = {156, 162, 169, 164};
+        
+        mapX.add(taxiDtoBbridge_xpts);
+        mapY.add(taxiDtoBbridge_ypts);
+        
+        int[] taxiC_xpts = {17, 311, 314, 310, 307, 135, 135, 129, 129, 116, 116, 109, 108, 61, 60, 56, 55, 17};
+        int[] taxiC_ypts = {317, 301, 311, 310, 305, 315, 322, 322, 316, 316, 323, 324, 317, 320, 327, 327, 320, 323};
+        
+        mapX.add(taxiC_xpts);
+        mapY.add(taxiC_ypts);
+        
+        int[] taxiH_xpts = {189, 187, 176, 154, 148, 147, 151, 178};
+        int[] taxiH_ypts = {155, 162, 158, 158, 160, 154, 152, 152};
+        
+        mapX.add(taxiH_xpts);
+        mapY.add(taxiH_ypts);
+        
+        int[] taxiE_xpts = {155, 160, 167, 172, 190, 188, 179, 168, 156};
+        int[] taxiE_ypts = {203, 198, 193, 190, 194, 198, 195, 198, 207};
+        
+        mapX.add(taxiE_xpts);
+        mapY.add(taxiE_ypts);
