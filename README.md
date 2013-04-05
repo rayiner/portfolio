@@ -38,8 +38,8 @@ It uses a thermodynamic model to evaluate the performance impact of varying cert
 This was my project for the Google Summer of Code 2005. 
 It is a tool that autoamtically generates foreign function interface (FFI) declarations from C++ headers.
 The program is written in Common Lisp. It features:
-- Parsing of an XML representation of C++ programs
-- Various transformations to generate more Lisp-like bindings, accounting for C++'s elaborate semantics
+- Parsing of an XML representation of C++ programs, accounting for C++'s elaborate semantics
+- Various transformations to generate more Lisp-like bindings
 - Generation of C-FFI declarations largely compatible with the GCC C++ ABI
 
 Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
