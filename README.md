@@ -21,8 +21,7 @@ It features:
 
 ## AMD64 assembler (amd64_assembler)
 
-This is an assembler that translates from an s-expression representation of AMD64 assembly to binary code. 
-It is written in Common Lisp. It features:
+This is an assembler that generates AMD64 binary machine code. It is written in Common Lisp. It features:
 - Use of macros to generate encoding functions at compile-time from declarative instruction specifications
 - Use of macros to generate randomized testing functions from the same specifications that drive the encoder
 - A testing framework that checks that the output is bit-for-bit identical with YASM
