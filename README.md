@@ -31,7 +31,7 @@ This is an assembler that generates AMD64 binary machine code. It is written in 
 ## Gas turbine simulation (gas_turbine)
 
 This is a simple simulation of a gas turbine (jet engine) written in Matlab. 
-It uses a thermodynamic model to evaluate the impact of varying certain design parameters. 
+It uses a thermodynamic model to evaluate the performance impact of varying certain design parameters. 
 
 ## Google Summer of Code 2005 project (google_soc_05)
 
