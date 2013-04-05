@@ -31,31 +31,41 @@ It is written in Common Lisp. It features:
 
 ## Gas turbine simulation (gas_turbine)
 
-This is a simple simulation of a gas turbine (jet engine) written in Matlab. It uses a thermodynamic model to study the impact of various design parameters. 
+This is a simple simulation of a gas turbine (jet engine) written in Matlab. 
+It uses a thermodynamic model to evaluate the impact of varying certain design parameters. 
 
 ## Google Summer of Code 2005 project (google_soc_05)
 
-This was my submission for the Google Summer of Code 2005. In order to be selected for the program, I wrote a project proposal describing a tool to generate bindings between C++ and Common Lisp programs. I then implemented this proposal. The program is written in Common Lisp. It features:
-- Parsing of a GCC-XML representation of C++ programs
-- Various transformations to make bindings more Lisp-like
+This was my project for the Google Summer of Code 2005. 
+It is a tool that autoamtically generates foreign function interface (FFI) declarations from C++ headers
+The program is written in Common Lisp. It features:
+- Parsing of an XML representation of C++ programs
+- Various transformations to translate from C++ semantics to more Lisp-like semantics
 - Generation of C-FFI declarations to implement the binding
 
-The program is written in Common Lisp. Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
+Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
 
-## Prototype KDE/Qt implementation of NET_WM_SYNC_REQUEST (kwin_netwm_sync.diff)
+## Prototype KDE/Qt implementation of synchronized window resizing (kwin_netwm_sync.diff)
 
-I restarted the discussion of implementing a protocol to achieve synchronized window resizing between X11 window managers and client applications by prototyping a KDE/Qt implementation of a protocol proposed a couple of years as METACITY_UPDATE_COUNTER. The discussion lead to the standardization of the NET_WM_SYNC_REQUEST specification, which has been implemented in both KDE/Qt and GTK+. The prototype involved:
-- Modifications to Qt to signal when it finishes drawing a frame
-- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt can completely redraw the window contents
-- The protocol uses the X11 SYNC extension to block the window manager until the client application indicates it is finished drawing a frame
+I prototyped a KDE/Qt implementation of the METACITY_UPDATE_COUNTER protocol, which had been included in Metacity/GTK+.
+I participated in the ensuing discussion, which led to the standardization of the _NET_WM_SYNC_REQUEST protocol.
+
+The prototype involved:
+- Modifications to Qt to cause it to signal when it finishes drawing a frame
+- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt is finished drawing
+- Use of the X11 SYNC extension to block the window manager while waiting for the client to redraw
 
 ## Lisp interpreter (lisp_interpreter)
 
-A very simple Lisp interpreter along with an Emacs mode for it.
+A very simple Lisp interpreter along with an Emacs mode for its syntax.
 
 ## Mostly-copying garbage collector (mostly_copying)
 
-An implementation of Joel F. Bartlett's "mostly copying" garbage collection algorithm, which mixes conservative root scavenging with precise object copying. The included technical report is Bartlett's original report. As a modification, I experimented with using a copy reserve smaller than the 100% necessary for a traditional semi-space algorithm, and using a fallback compactor for situations where the copying process runs out of room during a collection. 
+An implementation of Joel F. Bartlett's mostly-copying garbage collection algorithm, 
+which mixes conservative root scavenging with precise object copying. 
+As a modification, I experimented with optimistically allowing the mutator to fill up more than the half of the heap
+allowed in a traditional semi-space algorithm, and using a fallback compactor when this resulted in the collector
+running out of space before all live objects had been copied. The included technical report is Bartlett's original report.
 
 ## Open Dylan (opendylan)
 
