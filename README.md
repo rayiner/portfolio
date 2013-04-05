@@ -68,9 +68,13 @@ running out of space before all live objects had been copied. The included techn
 
 ## Open Dylan (opendylan)
 
-Open Dylan as an implementation of the Dylan language developed as a commercial project and open-sourced in 2004. 
-I fixed-up the C backend, which had been unused for some time, ported it to Mac OS X (i386 and PowerPC), 
-and fixed certain bugs. The directory contains several of my patches to the project. 
+Open Dylan as an implementation of the Dylan language developed as a commercial project and open-sourced in 2004.
+The directory contains several of my patches to the project:
+
+- Fixing up the C backend, which had not been used for some time
+- Porting the system, with the C backend, to Mac OS X (x86 and PPC)
+- Fixing certain bugs in the C-FFI
+
 The changes in the patches are mine, but the system as a whole was not written by me.
 
 ## Rotor blade design (rotor)
