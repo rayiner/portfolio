@@ -13,7 +13,7 @@ Feigh & Bruneau, "Incorporating Controller Intent into a Runway Incursion Preven
 The paper is based on a project submission to the 2007 FAA Airport Design Competition, Runway Safety category.
 
 The prototype is a Java program that simulates the proposed user interface of the air traffic control system. 
-It has:
+It features:
 - A GUI written using Swing
 - Loading and rendering of airport runway maps (ATL and PDK) stored in vector format
 - Use of Dijkstra's algorithm for finding the shortest path to a destination along taxiways
@@ -21,12 +21,13 @@ It has:
 
 ## AMD64 assembler (amd64_assembler)
 
-This is an assembler for AMD64 machine code that translates from an s-expression representation to assembled binary code. It is written in Common Lisp. It features:
-- Novel use of macros to generate encoding functions from declarative instruction specifications
-- Use of the instruction specifications to generate randomized testing functions for each type of instruction
-- Support for integer and SSE operations in 64-bit mode
+This is an assembler that translates from an s-expression representation of AMD64 assembly to binary code. 
+It is written in Common Lisp. It features:
+- Use of macros to generate encoding functions at compile-time from declarative instruction specifications
+- Use of macros to generate randomized testing functions from the same specifications that drive the encoder
+- A testing framework that checks that the output is bit-for-bit identical with YASM
 - A "jump relaxation" algorithm to minimize the size of compiled jumps
-- Simplistic output to Mach-O object files
+- Simplistic output to linkable Mach-O object files
 
 ## Gas turbine simulation (gas_turbine)
 
