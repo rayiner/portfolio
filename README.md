@@ -44,7 +44,7 @@ The program is written in Common Lisp. It features:
 
 Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
 
-## Prototype KDE/Qt implementation of synchronized window resizing (kwin_netwm_sync.diff)
+## Synchronized window resizing in X11 (kwin_netwm_sync.diff)
 
 I prototyped a KDE/Qt implementation of the METACITY_UPDATE_COUNTER protocol, which had been included in Metacity/GTK+.
 I participated in the ensuing discussion, which led to the standardization of the _NET_WM_SYNC_REQUEST protocol.
