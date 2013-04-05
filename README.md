@@ -69,20 +69,25 @@ running out of space before all live objects had been copied. The included techn
 
 ## Open Dylan (opendylan)
 
-Open Dylan as an implementation of the Dylan language implemented as a commercial project and open-sourced in 2004. A fixed up the C backend, which had been unused for some time, ported it to Mac OS X (i386 and PowerPC), and fixed certain bugs. The directory contains several of my patches to the project. The patches are mine, but the system as a whole was not written by me.
+Open Dylan as an implementation of the Dylan language implemented as a commercial project and open-sourced in 2004. 
+I fixed-up the C backend, which had been unused for some time, ported it to Mac OS X (i386 and PowerPC), 
+and fixed certain bugs. The directory contains several of my patches to the project. 
+The changes in the patches are mine, but the system as a whole was not written by me.
 
 ## Rotor blade design (rotor)
 
-This is a simple Matlab program that applies a finite-element model to the task of optimizing the figure of merit of a rotor. 
+This is a simple Matlab program that applies a finite-element model to the task of optimizing the figure of merit 
+of a helicopter rotor. 
 
-## SSA analysis (ssa_analysis)
+## SSA transformation (ssa_analysis)
 
-This program takes a simple source language as input (an assembly-level language with virtual registers), and performs various transformations on it as would be done in an optimizing compiler. It features:
-- Construction of a control flow graph from a source-level representation
-- A generic iterative data-flow solver
-- Dominance and dominance frontier analysis using the algorithm of Cooper, Harvey, and Kennedy
+This program takes a simple source language as input (an assembly-level language with virtual registers), 
+and performs various transformations on it as would be done in an optimizing compiler. It features:
+- Construction of a control flow graph from the source-level representation
+- A worklist-based iterative data-flow solver
+- Dominance analysis using the algorithm of Cooper, Harvey, and Kennedy
 - Liveness analysis based on the data-flow solver
 - Construction of pruned SSA form using the method outlined in Cooper & Torczon's "Engineering a Compiler" 
 - Copy propagation in SSA form
-- Correct elimination of SSA form minimizing inserted copies using Sreedhar's algorithm, along with Tarjan's union-find data structure.
+- Elimination of SSA form minimizing inserted copies using Sreedhar's algorithm, along with Tarjan's union-find data structure.
 - Computation of the interference graph and register allocation using Chaitin's graph coloring algorithm
