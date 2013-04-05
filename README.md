@@ -40,7 +40,7 @@ It is a tool that autoamtically generates foreign function interface (FFI) decla
 The program is written in Common Lisp. It features:
 - Parsing of an XML representation of C++ programs, accounting for C++'s elaborate semantics
 - Various transformations to generate more Lisp-like bindings
-- Generation of C-FFI declarations largely compatible with the GCC C++ ABI
+- Generation of C-FFI declarations (attempting to be) compatible with the GCC C++ ABI
 
 Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
 
