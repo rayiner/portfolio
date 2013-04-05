@@ -37,9 +37,9 @@ The program is written in Common Lisp. Portions of this code were written by Att
 ## Proposed KDE/Qt implementation of NET_WM_SYNC_REQUEST (kwin_netwm_sync.diff)
 
 I restarted the discussion of implementing a protocol to achieve synchronized window resizing between X11 window managers and client applications by prototyping a KDE/Qt implementation of a protocol proposed a couple of years as METACITY_UPDATE_COUNTER. The discussion lead to the standardization of the NET_WM_SYNC_REQUEST specification, which has been implemented in both KDE/Qt and GTK+. The prototype involved:
-- Modifications to Qt to signal when it finishes drawing a frame.
-- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt can completely redraw the window contents.
-- The protocol uses the X11 SYNC extension to block the window manager until the client application indicates it is finished drawing a frame.
+- Modifications to Qt to signal when it finishes drawing a frame
+- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt can completely redraw the window contents
+- The protocol uses the X11 SYNC extension to block the window manager until the client application indicates it is finished drawing a frame
 
 ## Lisp Interpreter (lisp_interpreter)
 
@@ -60,11 +60,11 @@ This is a simple Matlab program that applies a finite-element model to the task 
 ## SSA Analysis (ssa_analysis)
 
 This program takes a simple source language as input (an assembly-level language with virtual registers), and performs various transformations on it as would be done in an optimizing compiler. It features:
-- Construction of a control flow graph from a source-level representation.
-- A generic iterative data-flow solver.
-- Dominance and dominance frontier analysis using the algorithm of Cooper, Harvey, and Kennedy.
-- Liveness analysis based on the data-flow solver.
-- Construction of pruned SSA form using the method outlined in Cooper & Torczon's "Engineering a Compiler." 
-- Copy propagation in SSA form.
+- Construction of a control flow graph from a source-level representation
+- A generic iterative data-flow solver
+- Dominance and dominance frontier analysis using the algorithm of Cooper, Harvey, and Kennedy
+- Liveness analysis based on the data-flow solver
+- Construction of pruned SSA form using the method outlined in Cooper & Torczon's "Engineering a Compiler" 
+- Copy propagation in SSA form
 - Correct elimination of SSA form minimizing inserted copies using Sreedhar's algorithm, along with Tarjan's union-find data structure.
-- Computation of the interference graph and register allocation using Chaitin's graph coloring algorithm.
+- Computation of the interference graph and register allocation using Chaitin's graph coloring algorithm
