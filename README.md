@@ -3,18 +3,21 @@
 This is my programming portfolio. These are mostly small programs written to study specific topics. 
 These copies are meant to be read, not compiled or executed and may have some bit-rot. They did all work at one point. 
 My active projects are available at: http://github.com/rayiner. 
-Verrazano is now maintained by someone else and is available at: http://common-lisp.net/project/fetter.
+Verrazano is now maintained by Attila Lendvai and is available at: http://common-lisp.net/project/fetter.
 All code herein was written by myself, except where otherwise noted. 
 
 ## Controller Clearance Broadcast System (air_traffic)
 
-This is the prototype and mockup of the air traffic control system described in the paper: Feigh & Bruneau, "Incorporating Controller Intent into a Runway Incursion Prevention System." The paper is based on a project submission to the 2007 FAA Airport Design Competition, Runway Safety Segment. Our submission won the second place prize in that competition. 
+This is a prototype and mockup of the air traffic control system described in the paper: 
+Feigh & Bruneau, "Incorporating Controller Intent into a Runway Incursion Prevention System." 
+The paper is based on a project submission to the 2007 FAA Airport Design Competition, Runway Safety category.
 
-The prototype is a Java program that simulates the proposed user interface for the air traffic control system. It features:
+The prototype is a Java program that simulates the proposed user interface of the air traffic control system. 
+It has:
 - A GUI written using Swing
-- Loading and rendering of airport runway maps using vector graphics
-- Use of Dijkstra's algorithm for finding the shortest path to a destination along taxi-ways
-- Simulated communications between the tower and aircraft using our proposed protocol
+- Loading and rendering of airport runway maps (ATL and PDK) stored in vector format
+- Use of Dijkstra's algorithm for finding the shortest path to a destination along taxiways
+- Simulated communications between the tower and aircraft using the proposed protocol
 
 ## AMD64 assembler (amd64_assembler)
 
