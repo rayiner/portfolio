@@ -38,20 +38,22 @@ It uses a thermodynamic model to evaluate the performance impact of varying cert
 This was my project for the Google Summer of Code 2005. 
 It is a tool that automatically generates foreign function interface (FFI) declarations from C++ headers.
 The program is written in Common Lisp. It features:
-- Parsing of an XML representation of C++ programs, accounting for C++'s elaborate semantics
-- Various transformations to generate more Lisp-like bindings
+- Parsing of an XML representation of C++ programs
+- Lowering of complex C++ semantics into a simpler intermediate representation 
+- Various transformations to generate more Lisp-like bindings from C++ APIs
 - Generation of C-FFI declarations (attempting to be) compatible with the GCC C++ ABI
 
 Portions of this code were written by Attila Lendvai, who took over maintainership of the project in 2007. 
 
 ## Synchronized window resizing in KDE/Qt (kwin_netwm_sync.diff)
 
-I prototyped a KDE/Qt implementation of the METACITY_UPDATE_COUNTER protocol, which had been included in Metacity/GTK+.
-I participated in the ensuing discussion, which led to the standardization of the _NET_WM_SYNC_REQUEST protocol.
+I prototyped a KDE/Qt implementation of the METACITY_UPDATE_COUNTER protocol, which had been included in Metacity/GTK+,
+but was not standardized and not implemented in KDE/Qt. I contributed to the ensuing discussion, 
+which led to the standardization of the _NET_WM_SYNC_REQUEST protocol.
 
 The prototype involved:
 - Modifications to Qt to cause it to signal when it finishes drawing a frame
-- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt is finished drawing
+- Modifications to Kwin to avoid resizing and redrawing a window frame until Qt finishes drawing
 - Use of the X11 SYNC extension to block the window manager while waiting for the client to redraw
 
 ## Lisp interpreter (lisp_interpreter)
@@ -63,10 +65,10 @@ A very simple Lisp interpreter along with an Emacs mode for its syntax.
 An implementation of Joel F. Bartlett's mostly-copying garbage collection algorithm, 
 which mixes conservative root scavenging with precise object copying. 
 As a modification, I experimented with optimistically allowing the mutator to fill up more than the half of the heap
-allowed in a traditional semi-space algorithm, and using a fallback compactor when this resulted in the collector
-running out of space before all live objects had been copied. The included technical report is Bartlett's original report.
+allowed in a traditional semi-space algorithm and using a fallback compactor when this resulted in the collector
+running out of space before all live objects could be copied. The included technical report is Bartlett's original report.
 
-## Open Dylan (opendylan)
+## Open Dylan patches (opendylan)
 
 Open Dylan as an implementation of the Dylan language developed as a commercial project and open-sourced in 2004.
 The directory contains several of my patches to the project:
@@ -82,7 +84,7 @@ The changes in the patches are mine, but the system as a whole was not written b
 This is a simple Matlab program that applies a finite-element model to the task of optimizing the figure of merit 
 of a helicopter rotor. 
 
-## SSA transformation (ssa_analysis)
+## SSA experiments (ssa_analysis)
 
 This program takes a simple source language as input (an assembly-level language with virtual registers), 
 and performs various transformations on it as would be done in an optimizing compiler. It features:
@@ -92,5 +94,5 @@ and performs various transformations on it as would be done in an optimizing com
 - Liveness analysis based on the data-flow solver
 - Construction of pruned SSA form using the method outlined in Cooper & Torczon's "Engineering a Compiler" 
 - Copy propagation in SSA form
-- Elimination of SSA form minimizing inserted copies using Sreedhar's algorithm, along with Tarjan's union-find data structure.
+- Elimination of SSA form minimizing inserted copies using Sreedhar's algorithm, along with Tarjan's union-find data structure
 - Computation of the interference graph and register allocation using Chaitin's graph coloring algorithm
